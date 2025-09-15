@@ -1,13 +1,12 @@
 <?php
 // ===================================================================
-// ALPHA TTS BOT - RENDER.COM - UPTIMEROBOT COMPATIBLE
-// This version explicitly handles HEAD requests for monitoring services.
-// Version: 3.1 FINAL
+// ALPHA TTS BOT - RENDER.COM - FINAL ASYNCHRONOUS VERSION
+// This version uses a self-invocation pattern to handle long-running tasks
+// and prevent Telegram timeouts, solving the double-processing issue.
+// Version: 4.0 FINAL
 // ===================================================================
 
-// ===================================================================
-// ۱. بارگذاری تنظیمات از متغیرهای محیطی (Environment Variables)
-// ===================================================================
+// بخش ۱ و ۲ بدون تغییر هستند
 define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
 define('RENDER_API_URL', getenv('RENDER_API_URL'));
 define('INTERNAL_API_SECRET', getenv('INTERNAL_API_SECRET'));
@@ -17,87 +16,26 @@ define('SUPPORT_USERNAME', getenv('SUPPORT_USERNAME') ?: 'ezmarynoori');
 define('USER_API_URL', getenv('USER_API_URL'));
 define('USER_API_SECRET', getenv('USER_API_SECRET'));
 define('CALLBACK_URL', 'https://' . ($_SERVER['HTTP_HOST'] ?? 'YOUR_APP_NAME.onrender.com') . '/');
-
-// ===================================================================
-// ۲. تنظیمات ثابت ربات
-// ===================================================================
 ignore_user_abort(true);
 set_time_limit(300);
-
-define('SUBSCRIPTION_PLANS', [
-    '1_month' => ['name' => 'یک ماهه نامحدود', 'price' => 150000, 'duration' => '+1 month'],
-    '6_months' => ['name' => 'شش ماهه نامحدود', 'price' => 497000, 'duration' => '+6 months'],
-    '1_year' => ['name' => 'یک ساله نامحدود', 'price' => 799000, 'duration' => '+1 year']
-]);
-define('SPEAKER_PAGES', [
-    'https://uploadkon.ir/uploads/c5be15_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۷۱۷.jpg',
-    'https://uploadkon.ir/uploads/298515_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۷۳۵.jpg',
-    'https://uploadkon.ir/uploads/ffbd15_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۷۵۰.jpg',
-    'https://uploadkon.ir/uploads/9df915_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۸۰۶.jpg'
-]);
-$speakers = [
-    ["id" => "Charon", "name" => "شهاب (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQNox-KKZX3zq9MDLncxvJ1iJ6TgpwACnBkAAkNIQFba6SyfZFfZzDYE"],
-    ["id" => "Zephyr", "name" => "آوا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPQFox-J7LoSkDhyIi-QB1R5Lo8mGYwACYxgAAsfpOVZj5bqFIcXJ6zYE"],
-    ["id" => "Achird", "name" => "نوید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQ1ox-MfiSopQvDlUs0EhQpi62XHrAAC9B8AAha-QVaIWTf4YBiqmTYE"],
-    ["id" => "Zubenelgenubi", "name" => "آرمان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRFox-NBcq6VkcXvuA_4Igj1PEkgYQACKigAAi9PQVZ4veRoeyfbhDYE"],
-    ["id" => "Vindemiatrix", "name" => "مهسا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPRVox-NS3XGVPe9wdW1uoJQaJ11BkQAC0hYAAgNIQVagnFIpYX_8dDYE"],
-    ["id" => "Sadachbia", "name" => "سامان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRdox-NgYIsVn83WVl0ZC08CBEmcegACyxgAAgN9QVZhh8TDp0TCVjYE"],
-    ["id" => "Sadaltager", "name" => "آرش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRtox-N4UzJLw6QcQ5DRRUEgU7qgvAACNRkAArrjQVZxH2DWg2K2HzYE"],
-    ["id" => "Sulafat", "name" => "شبنم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPR1ox-OKzExg_EimiDnOCLoGDoHRpAACfxcAAlVjQVaAXiad1E70NzYE"],
-    ["id" => "Laomedeia", "name" => "سحر (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSFox-OWBAe4mAuVX5PDfR86EVO_qQACGxoAAj26OFYiFItngQOiwDYE"],
-    ["id" => "Achernar", "name" => "مریم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSNox-OjinI-hCvP4f-aPnG3A27rDgACUxsAArlOQVbstmCZxsINJDYE"],
-    ["id" => "Alnilam", "name" => "بهرام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSVox-OyDI-91uo0a90SKP_gl9LLLQACTBgAArpHQVY1oMYrjKmv9zYE"],
-    ["id" => "Schedar", "name" => "نیکان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSlox-PESJhB9qJjuYXmYgnbjojuwQACcRgAAgH4OFaBbAhRQcNxyjYE"],
-    ["id" => "Gacrux", "name" => "فرناز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPStox-QO_vjSqb21cz7GPa5RnXMbuAACTBkAAkLQQFb4kttkGAvC2jYE"],
-    ["id" => "Pulcherrima", "name" => "سارا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPS1ox-Qeqn6ibT148SCuccPonqh4ZQAC4R8AArzfOFazYzXm0gHxVTYE"],
-    ["id" => "Umbriel", "name" => "مانی (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPS9ox-QuUcUAAeKyD7A1lT-HUhSsAAEiAAKSGQACKMxBViNIL1SGu68UNgQ"],
-    ["id" => "Algieba", "name" => "آرتین (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPTFox-RETf15qxnaOdOlNB79SA_BRAACRR8AAtxHQFbx6c8T6RbULzYE"],
-    ["id" => "Despina", "name" => "دلنواز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPTpox-RVvVtm4OLHqj4iJFStCFXKKQACshkAAkaUQFarMRijcz788TYE"],
-    ["id" => "Erinome", "name" => "روژان (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPT1ox-RmsM-QWebCkWquyRVpnRhDSgADHgACmC1AVjCg0Mzaz88nNgQ"],
-    ["id" => "Algenib", "name" => "امید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPT9ox-R5Eoc0kogVwdZ01oD81v1SPgACCRgAAh7vQVbMnlqtIazx1DYE"],
-    ["id" => "Orus", "name" => "بردیا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUFox-SIPYzgBqWHmLcNZW5NX_uwoAACtBkAAvr2QVa0LxB9WplycjYE"],
-    ["id" => "Aoede", "name" => "ترانه (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUNox-SZFgcFIWq9RNnTsmkvfcr6GwACWRYAAjKHQFYcaJS152bioTYE"],
-    ["id" => "Callirrhoe", "name" => "نیکو (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUVox-SnEZHeH2-oyxpzu1l1ze9pgAACuxgAAolrQFbnNgOtUfj5ezYE"],
-    ["id" => "Autonoe", "name" => "هستی (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUdox-S3o8JaBig8xJDhMvwziZBWGAACOBoAAmb6QFZJ3G1QTkEm0TYE"],
-    ["id" => "Enceladus", "name" => "کامیار (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUlox-THc7SxHNmBmlk-5yTa0KbjigACHhgAAmu0QFYa_SJCMtPREjYE"],
-    ["id" => "Iapetus", "name" => "کیانوش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUtox-TZTWQTyMxoR3Z8bSEZEfJqPQAC_RsAAiGfQVadbFGzD8OUSDYE"],
-    ["id" => "Puck", "name" => "پویا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPU1ox-Tn17qfYDuN9_VzcaWxHMxhFwACIRgAAno_QFZ5ZPKwGVwlWzYE"],
-    ["id" => "Kore", "name" => "مهتاب (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPU9ox-UhdAH61qvl4urbSsE5w56TtAACfBgAApy0QFYZ0Az3CdbMZzYE"],
-    ["id" => "Fenrir", "name" => "سام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPVFox-UtHi1p9mAMzteL26LhKAaBBgACVB0AArXbQFbW8BK3mtfIezYE"],
-    ["id" => "Leda", "name" => "لیدا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPVNox-U-8jIxsxjNdcBNURwMFq9--wACtBkAAqelOVaJlegbhzaYWjYE"]
-];
+define('SUBSCRIPTION_PLANS', [ '1_month' => ['name' => 'یک ماهه نامحدود', 'price' => 150000, 'duration' => '+1 month'], '6_months' => ['name' => 'شش ماهه نامحدود', 'price' => 497000, 'duration' => '+6 months'], '1_year' => ['name' => 'یک ساله نامحدود', 'price' => 799000, 'duration' => '+1 year']]);
+define('SPEAKER_PAGES', ['https://uploadkon.ir/uploads/c5be15_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۷۱۷.jpg', 'https://uploadkon.ir/uploads/298515_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۷۳۵.jpg', 'https://uploadkon.ir/uploads/ffbd15_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۷۵۰.jpg', 'https://uploadkon.ir/uploads/9df915_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۸۰۶.jpg']);
+$speakers = [["id" => "Charon", "name" => "شهاب (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQNox-KKZX3zq9MDLncxvJ1iJ6TgpwACnBkAAkNIQFba6SyfZFfZzDYE"], ["id" => "Zephyr", "name" => "آوا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPQFox-J7LoSkDhyIi-QB1R5Lo8mGYwACYxgAAsfpOVZj5bqFIcXJ6zYE"], ["id" => "Achird", "name" => "نوید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQ1ox-MfiSopQvDlUs0EhQpi62XHrAAC9B8AAha-QVaIWTf4YBiqmTYE"], ["id" => "Zubenelgenubi", "name" => "آرمان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRFox-NBcq6VkcXvuA_4Igj1PEkgYQACKigAAi9PQVZ4veRoeyfbhDYE"], ["id" => "Vindemiatrix", "name" => "مهسا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPRVox-NS3XGVPe9wdW1uoJQaJ11BkQAC0hYAAgNIQVagnFIpYX_8dDYE"], ["id" => "Sadachbia", "name" => "سامان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRdox-NgYIsVn83WVl0ZC08CBEmcegACyxgAAgN9QVZhh8TDp0TCVjYE"], ["id" => "Sadaltager", "name" => "آرش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRtox-N4UzJLw6QcQ5DRRUEgU7qgvAACNRkAArrjQVZxH2DWg2K2HzYE"], ["id" => "Sulafat", "name" => "شبنم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPR1ox-OKzExg_EimiDnOCLoGDoHRpAACfxcAAlVjQVaAXiad1E70NzYE"], ["id" => "Laomedeia", "name" => "سحر (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSFox-OWBAe4mAuVX5PDfR86EVO_qQACGxoAAj26OFYiFItngQOiwDYE"], ["id" => "Achernar", "name" => "مریم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSNox-OjinI-hCvP4f-aPnG3A27rDgACUxsAArlOQVbstmCZxsINJDYE"], ["id" => "Alnilam", "name" => "بهرام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSVox-OyDI-91uo0a90SKP_gl9LLLQACTBgAArpHQVY1oMYrjKmv9zYE"], ["id" => "Schedar", "name" => "نیکان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSlox-PESJhB9qJjuYXmYgnbjojuwQACcRgAAgH4OFaBbAhRQcNxyjYE"], ["id" => "Gacrux", "name" => "فرناز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPStox-QO_vjSqb21cz7GPa5RnXMbuAACTBkAAkLQQFb4kttkGAvC2jYE"], ["id" => "Pulcherrima", "name" => "سارا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPS1ox-Qeqn6ibT148SCuccPonqh4ZQAC4R8AArzfOFazYzXm0gHxVTYE"], ["id" => "Umbriel", "name" => "مانی (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPS9ox-QuUcUAAeKyD7A1lT-HUhSsAAEiAAKSGQACKMxBViNIL1SGu68UNgQ"], ["id" => "Algieba", "name" => "آرتین (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPTFox-RETf15qxnaOdOlNB79SA_BRAACRR8AAtxHQFbx6c8T6RbULzYE"], ["id" => "Despina", "name" => "دلنواز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPTpox-RVvVtm4OLHqj4iJFStCFXKKQACshkAAkaUQFarMRijcz788TYE"], ["id" => "Erinome", "name" => "روژان (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPT1ox-RmsM-QWebCkWquyRVpnRhDSgADHgACmC1AVjCg0Mzaz88nNgQ"], ["id" => "Algenib", "name" => "امید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPT9ox-R5Eoc0kogVwdZ01oD81v1SPgACCRgAAh7vQVbMnlqtIazx1DYE"], ["id" => "Orus", "name" => "بردیا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUFox-SIPYzgBqWHmLcNZW5NX_uwoAACtBkAAvr2QVa0LxB9WplycjYE"], ["id" => "Aoede", "name" => "ترانه (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUNox-SZFgcFIWq9RNnTsmkvfcr6GwACWRYAAjKHQFYcaJS152bioTYE"], ["id" => "Callirrhoe", "name" => "نیکو (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUVox-SnEZHeH2-oyxpzu1l1ze9pgAACuxgAAolrQFbnNgOtUfj5ezYE"], ["id" => "Autonoe", "name" => "هستی (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUdox-S3o8JaBig8xJDhMvwziZBWGAACOBoAAmb6QFZJ3G1QTkEm0TYE"], ["id" => "Enceladus", "name" => "کامیار (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUlox-THc7SxHNmBmlk-5yTa0KbjigACHhgAAmu0QFYa_SJCMtPREjYE"], ["id" => "Iapetus", "name" => "کیانوش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUtox-TZTWQTyMxoR3Z8bSEZEfJqPQAC_RsAAiGfQVadbFGzD8OUSDYE"], ["id" => "Puck", "name" => "پویا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPU1ox-Tn17qfYDuN9_VzcaWxHMxhFwACIRgAAno_QFZ5ZPKwGVwlWzYE"], ["id" => "Kore", "name" => "مهتاب (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPU9ox-UhdAH61qvl4urbSsE5w56TtAACfBgAApy0QFYZ0Az3CdbMZzYE"], ["id" => "Fenrir", "name" => "سام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPVFox-UtHi1p9mAMzteL26LhKAaBBgACVB0AArXbQFbW8BK3mtfIezYE"], ["id" => "Leda", "name" => "لیدا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPVNox-U-8jIxsxjNdcBNURwMFq9--wACtBkAAqelOVaJlegbhzaYWjYE"]];
 $speaker_count = count($speakers);
 $mainMenu = ['keyboard' => [[['text' => '🎤 تغییر گوینده'], ['text' => '🌡️ تنظیم خلاقیت']], [['text' => '💳 خرید اشتراک'], ['text' => '👥 دعوت از دوستان']], [['text' => '👤 حساب من'], ['text' => '📞 پشتیبانی'], ['text' => 'راهنما ℹ️']]], 'resize_keyboard' => true];
 
-
 // ===================================================================
-// ۳. مسیریاب اصلی (Router) - این بخش آپدیت شده
+// ۳. مسیریاب اصلی (Router) - این بخش کاملاً بازنویسی شده
 // ===================================================================
 
-// این بخش جدید اضافه شده تا به UptimeRobot جواب بدهد
-if ($_SERVER['REQUEST_METHOD'] === 'HEAD') {
-    http_response_code(200);
-    exit();
-}
+// بررسی هدرهای ورودی
+$headers = getallheaders();
 
-// بقیه کد مثل قبل است
-if (isset($_GET['Authority']) && isset($_GET['Status'])) {
-    handleZarinpalCallback();
-    exit();
-} else {
+// --- حالت ۱: این یک درخواست داخلی برای پردازش است ---
+if (isset($headers['X-Internal-Request'])) {
     $update_json = file_get_contents('php://input');
-    if (empty($update_json)) {
-        http_response_code(200);
-        echo "Alpha TTS Bot is alive on Render.com (Diskless). Ready for Telegram updates.";
-        exit();
-    }
-    
-    http_response_code(200);
-    if (function_exists('fastcgi_finish_request')) {
-        fastcgi_finish_request();
-    }
-    
     $update = json_decode($update_json, true);
+
     if (isset($update['callback_query'])) {
         handleCallbackQuery($update['callback_query']);
     } elseif (isset($update['message'])) {
@@ -106,17 +44,72 @@ if (isset($_GET['Authority']) && isset($_GET['Status'])) {
     exit();
 }
 
+// --- حالت ۲: این یک درخواست از UptimeRobot است ---
+if ($_SERVER['REQUEST_METHOD'] === 'HEAD') {
+    http_response_code(200);
+    exit();
+}
+
+// --- حالت ۳: این یک درخواست بازگشت از زرین‌پال است ---
+if (isset($_GET['Authority']) && isset($_GET['Status'])) {
+    handleZarinpalCallback();
+    exit();
+}
+
+// --- حالت ۴: این یک درخواست جدید از تلگرام است (Webhook) ---
+$update_json = file_get_contents('php://input');
+
+// اگر درخواست خالی بود (مثلاً باز کردن آدرس در مرورگر)، یک پیام نشان بده
+if (empty($update_json)) {
+    http_response_code(200);
+    echo "Alpha TTS Bot is alive on Render.com. Ready for Telegram updates.";
+    exit();
+}
+
+// ۱. بلافاصله به تلگرام پاسخ بده
+http_response_code(200);
+header("Connection: close");
+header("Content-Length: 0");
+ob_end_flush();
+flush();
+if (function_exists('fastcgi_finish_request')) {
+    fastcgi_finish_request();
+}
+
+// ۲. حالا اسکریپت را در پس‌زمینه برای پردازش واقعی فراخوانی کن
+$ch = curl_init();
+$url = 'https://' . $_SERVER['HTTP_HOST'] . '/';
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_POST, 1);
+curl_setopt($ch, CURLOPT_POSTFIELDS, $update_json);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, false); // برای اینکه منتظر پاسخ نمانیم
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Content-Type: application/json',
+    'X-Internal-Request: true' // هدر مخفی برای شناسایی درخواست داخلی
+]);
+curl_setopt($ch, CURLOPT_TIMEOUT_MS, 500); // فقط نیم ثانیه برای ارسال صبر کن
+curl_exec($ch);
+curl_close($ch);
+
+// کار این بخش تمام شد. پردازش اصلی در درخواست داخلی انجام می‌شود.
+exit();
+
 // ===================================================================
 // تمام توابع دیگر (بخش ۴، ۵، ۶ و ۷) بدون هیچ تغییری در ادامه قرار می‌گیرند
 // ===================================================================
+
+function handleMessage($message) { /* ... کد شما ... */ }
+function handleCallbackQuery($callback_query) { /* ... کد شما ... */ }
+function handleZarinpalCallback() { /* ... کد شما ... */ }
+// ... و تمام توابع دیگر
+// (برای راحتی، کل توابع در پایین آورده شده است)
 
 function handleMessage($message) {
     global $mainMenu, $speakers, $speaker_count;
     $chat_id = $message['from']['id'];
     $user_data = loadUserData($chat_id);
     if ($user_data === null) { 
-        sendMessage($chat_id, "❌ خطای موقت در دسترسی به اطلاعات حساب شما. لطفاً چند لحظه دیگر دوباره تلاش کنید.");
-        return;
+        return; // در حالت پس‌زمینه، پیام خطا نفرست
     }
     $user_state = $user_data['state'] ?? 'normal';
     if (isset($message['sticker'])) {
@@ -319,16 +312,7 @@ function handleZarinpalCallback() {
 }
 function apiRequest($payload) {
     $ch = curl_init(USER_API_URL);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => json_encode($payload),
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'X-Api-Secret: ' . USER_API_SECRET
-        ],
-        CURLOPT_TIMEOUT => 10
-    ]);
+    curl_setopt_array($ch, [ CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($payload), CURLOPT_HTTPHEADER => [ 'Content-Type: application/json', 'X-Api-Secret: ' . USER_API_SECRET ], CURLOPT_TIMEOUT => 10 ]);
     $response_json = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
@@ -340,175 +324,27 @@ function apiRequest($payload) {
     }
     return null;
 }
-function loadUserData($chat_id) {
-    return apiRequest(['action' => 'load_user', 'chat_id' => $chat_id]);
-}
-function saveUserData($chat_id, $data) {
-    apiRequest(['action' => 'save_user', 'chat_id' => $chat_id, 'data' => $data]);
-}
-function loadPaymentData($authority) {
-    return apiRequest(['action' => 'load_payment', 'authority' => $authority]);
-}
-function savePaymentData($authority, $data) {
-    apiRequest(['action' => 'save_payment', 'authority' => $authority, 'data' => $data]);
-}
-function deletePaymentData($authority) {
-    apiRequest(['action' => 'delete_payment', 'authority' => $authority]);
-}
-function canUserConvert($chat_id) {
-    $user_data = loadUserData($chat_id);
-    if ($user_data === null) return false;
-    if (isset($user_data['subscription_expiry']) && $user_data['subscription_expiry'] > time()) {
-        return true;
-    }
-    $credits = $user_data['free_credits_remaining'] ?? 10;
-    if ($credits > 0) {
-        $user_data['free_credits_remaining'] = $credits - 1;
-        saveUserData($chat_id, $user_data);
-        return true;
-    }
-    return false;
-}
-function telegramApiRequest($method, $parameters = []) {
-    $url = "https://api.telegram.org/bot" . TELEGRAM_BOT_TOKEN . "/" . $method;
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $parameters);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-    $response = curl_exec($ch);
-    curl_close($ch);
-    return $response;
-}
-function showSubscriptionMenu($chat_id) {
-    $keyboard = ['inline_keyboard' => []];
-    foreach (SUBSCRIPTION_PLANS as $id => $plan) {
-        $button_text = $plan['name'] . " - " . number_format($plan['price']) . " تومان";
-        $keyboard['inline_keyboard'][] = [['text' => $button_text, 'callback_data' => 'subscribe_' . $id]];
-    }
-    sendMessage($chat_id, "لطفا یکی از پلن‌های اشتراک زیر را انتخاب کنید:", json_encode($keyboard));
-}
-function showAccountStatus($chat_id) {
-    $user_data = loadUserData($chat_id);
-    if ($user_data === null) { sendMessage($chat_id, "خطا در دریافت اطلاعات حساب."); return; }
-    $status_text = "📊 وضعیت حساب شما:\n\n";
-    if (isset($user_data['subscription_expiry']) && $user_data['subscription_expiry'] > time()) {
-        $status_text .= "🌟 **نوع حساب:** نامحدود\n";
-        $status_text .= "🗓 **تاریخ انقضا:** " . date("Y-m-d H:i", $user_data['subscription_expiry']);
-    } else {
-        $credits = $user_data['free_credits_remaining'] ?? 10;
-        $status_text .= "▫️ **نوع حساب:** رایگان\n";
-        $status_text .= "🎙 **اعتبار باقی‌مانده:** " . $credits . " عدد";
-    }
-    sendMessage($chat_id, $status_text);
-}
-function startSpeakerSelection($chat_id) {
-    $user_data = loadUserData($chat_id);
-    if ($user_data === null) { sendMessage($chat_id, "خطا در دسترسی به حساب."); return; }
-    $user_data['state'] = 'awaiting_speaker_selection';
-    saveUserData($chat_id, $user_data);
-    $media_group = [];
-    $caption_text = "گالری گویندگان\n\nلطفا **شماره** گوینده مورد نظر خود را از روی عکس‌ها ارسال کنید.";
-    foreach (SPEAKER_PAGES as $index => $url) {
-        $media_item = ['type' => 'photo', 'media' => $url];
-        if ($index === 0) { $media_item['caption'] = $caption_text; $media_item['parse_mode'] = 'Markdown'; }
-        $media_group[] = $media_item;
-    }
-    telegramApiRequest('sendMediaGroup', ['chat_id' => $chat_id, 'media' => json_encode($media_group)]);
-    sendMessage($chat_id, "برای لغو انتخاب، دستور /cancel را ارسال کنید.");
-}
-function showSupportMenu($chat_id) {
-    $supportKeyboard = ['inline_keyboard' => [[['text' => '💬 ارتباط با پشتیبانی', 'url' => 'https://t.me/' . SUPPORT_USERNAME]]]];
-    sendMessage($chat_id, "برای ارتباط با پشتیبانی روی دکمه زیر کلیک کنید:", json_encode($supportKeyboard));
-}
-function showHelp($chat_id) {
-    $help_text = "راهنمای استفاده از ربات آلفا:\n\n";
-    $help_text .= "1️⃣ **تبدیل ساده متن:**\nکافیست متن خود را ارسال کنید.\n\n";
-    $help_text .= "2️⃣ **افزودن لحن و احساس:**\nتوصیف لحن را در انتهای متن خود و داخل پرانتز `()` قرار دهید.\n*مثال:* `سلام (با لحنی خوشحال)`\n\n";
-    $help_text .= "3️⃣ **تغییر گوینده:**\nاز منو، گزینه '🎤 تغییر گوینده' را انتخاب کنید.\n\n";
-    $help_text .= "4️⃣ **تنظیم خلاقیت:**\nاز منو، گزینه '🌡️ تنظیم خلاقیت' را انتخاب کنید.\n\n";
-    $help_text .= "5️⃣ **دعوت از دوستان:**\nاز منو، گزینه '👥 دعوت از دوستان' را انتخاب کرده و با لینک اختصاصی خود، برای هر عضویت جدید ۸ اعتبار رایگان هدیه بگیرید.";
-    sendMessage($chat_id, $help_text);
-}
-function showReferralInfo($chat_id) {
-    $referral_link = 'https://t.me/' . BOT_USERNAME . '?start=ref_' . $chat_id;
-    $message = "🎉 **دوستان خود را دعوت کنید و اعتبار رایگان هدیه بگیرید!**\n\n";
-    $message .= "با لینک اختصاصی زیر، دوستان خود را به ربات آلفا دعوت کنید.\n\n";
-    $message .= "به ازای هر دوستی که برای اولین بار از طریق لینک شما ربات را استارت کند، **۸ اعتبار رایگان** برای تولید صدا به شما هدیه داده می‌شود.\n\n";
-    $message .= "لینک دعوت شما:\n`" . $referral_link . "`";
-    sendMessage($chat_id, $message);
-}
-function showTemperatureMenu($chat_id) {
-    $tempKeyboard = ['inline_keyboard' => [[['text' => 'کم (پایدار)', 'callback_data' => 'settemp_0.3'], ['text' => 'متوسط', 'callback_data' => 'settemp_0.7']], [['text' => 'پیش‌فرض (بهینه)', 'callback_data' => 'settemp_0.9'], ['text' => 'زیاد (احساسی)', 'callback_data' => 'settemp_1.2']]]];
-    sendMessage($chat_id, "لطفا میزان خلاقیت و پویایی صدا را انتخاب کنید:", json_encode($tempKeyboard));
-}
-function sendMessage($chat_id, $message, $reply_markup = null) {
-    $params = ['chat_id' => $chat_id, 'text' => $message, 'parse_mode' => 'Markdown'];
-    if ($reply_markup) { $params['reply_markup'] = $reply_markup; }
-    telegramApiRequest('sendMessage', $params);
-}
-function editMessageText($chat_id, $message_id, $text, $reply_markup = null) {
-    $params = ['chat_id' => $chat_id, 'message_id' => $message_id, 'text' => $text, 'parse_mode' => 'Markdown'];
-    if ($reply_markup) { $params['reply_markup'] = $reply_markup; }
-    telegramApiRequest('editMessageText', $params);
-}
-function deleteMessage($chat_id, $message_id) {
-    telegramApiRequest('deleteMessage', ['chat_id' => $chat_id, 'message_id' => $message_id]);
-}
-function answerCallbackQuery($callback_query_id, $text = '', $show_alert = false) {
-    telegramApiRequest('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => $text, 'show_alert' => $show_alert]);
-}
-function sendSticker($chat_id, $file_id) {
-    if (!$file_id || strpos($file_id, 'PLACEHOLDER') !== false) return;
-    telegramApiRequest('sendSticker', ['chat_id' => $chat_id, 'sticker' => $file_id]);
-}
-function sendAudio($chat_id, $audio_data, $caption = '') {
-    $temp_file_path = sys_get_temp_dir() . '/' . uniqid('tts_audio_', true) . '.wav';
-    file_put_contents($temp_file_path, $audio_data);
-    telegramApiRequest('sendAudio', ['chat_id' => $chat_id, 'audio' => new CURLFile($temp_file_path, 'audio/wav', 'voice.wav'), 'caption' => $caption]);
-    @unlink($temp_file_path);
-}
-function convertPersianNumbersToEnglish($string) {
-    $persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-    $english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    return str_replace($persian, $english, $string);
-}
-function splitTextIntoChunks($text, $maxLength = 2500) {
-    $chunks = [];
-    $text = trim($text);
-    if (mb_strlen($text, 'UTF-8') <= $maxLength) { return [$text]; }
-    while (mb_strlen($text, 'UTF-8') > 0) {
-        if (mb_strlen($text, 'UTF-8') <= $maxLength) { $chunks[] = $text; break; }
-        $chunk_candidate = mb_substr($text, 0, $maxLength, 'UTF-8');
-        $split_pos = -1;
-        $delimiters = ["\n", ".", "!", "؟", "،", " "];
-        foreach ($delimiters as $delimiter) {
-            $last_pos = mb_strrpos($chunk_candidate, $delimiter, 0, 'UTF-8');
-            if ($last_pos !== false) { $split_pos = $last_pos + mb_strlen($delimiter, 'UTF-8'); break; }
-        }
-        if ($split_pos === -1) { $split_pos = $maxLength; }
-        $chunks[] = trim(mb_substr($text, 0, $split_pos, 'UTF-8'));
-        $text = trim(mb_substr($text, $split_pos, null, 'UTF-8'));
-    }
-    return array_filter($chunks, function($chunk) { return !empty($chunk); });
-}
-function mergeWavFiles($files) {
-    if (empty($files)) return null;
-    if (count($files) == 1) return $files[0];
-    $first_file_content = @file_get_contents($files[0]);
-    if(!$first_file_content) return null;
-    $header = substr($first_file_content, 0, 44);
-    $all_data = substr($first_file_content, 44);
-    for ($i = 1; $i < count($files); $i++) {
-        $content = @file_get_contents($files[$i]);
-        if ($content) { $all_data .= substr($content, 44); }
-    }
-    $data_size = strlen($all_data);
-    $file_size = $data_size + 36;
-    $header = substr_replace($header, pack('V', $file_size), 4, 4);
-    $header = substr_replace($header, pack('V', $data_size), 40, 4);
-    $final_file_path = tempnam(sys_get_temp_dir(), 'tts_merged') . '.wav';
-    file_put_contents($final_file_path, $header . $all_data);
-    return $final_file_path;
-}
+function loadUserData($chat_id) { return apiRequest(['action' => 'load_user', 'chat_id' => $chat_id]); }
+function saveUserData($chat_id, $data) { apiRequest(['action' => 'save_user', 'chat_id' => $chat_id, 'data' => $data]); }
+function loadPaymentData($authority) { return apiRequest(['action' => 'load_payment', 'authority' => $authority]); }
+function savePaymentData($authority, $data) { apiRequest(['action' => 'save_payment', 'authority' => $authority, 'data' => $data]); }
+function deletePaymentData($authority) { apiRequest(['action' => 'delete_payment', 'authority' => $authority]); }
+function canUserConvert($chat_id) { $user_data = loadUserData($chat_id); if ($user_data === null) return false; if (isset($user_data['subscription_expiry']) && $user_data['subscription_expiry'] > time()) { return true; } $credits = $user_data['free_credits_remaining'] ?? 10; if ($credits > 0) { $user_data['free_credits_remaining'] = $credits - 1; saveUserData($chat_id, $user_data); return true; } return false; }
+function telegramApiRequest($method, $parameters = []) { $url = "https://api.telegram.org/bot" . TELEGRAM_BOT_TOKEN . "/" . $method; $ch = curl_init($url); curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); curl_setopt($ch, CURLOPT_POST, true); curl_setopt($ch, CURLOPT_POSTFIELDS, $parameters); curl_setopt($ch, CURLOPT_TIMEOUT, 30); $response = curl_exec($ch); curl_close($ch); return $response; }
+function showSubscriptionMenu($chat_id) { $keyboard = ['inline_keyboard' => []]; foreach (SUBSCRIPTION_PLANS as $id => $plan) { $button_text = $plan['name'] . " - " . number_format($plan['price']) . " تومان"; $keyboard['inline_keyboard'][] = [['text' => $button_text, 'callback_data' => 'subscribe_' . $id]]; } sendMessage($chat_id, "لطفا یکی از پلن‌های اشتراک زیر را انتخاب کنید:", json_encode($keyboard)); }
+function showAccountStatus($chat_id) { $user_data = loadUserData($chat_id); if ($user_data === null) { sendMessage($chat_id, "خطا در دریافت اطلاعات حساب."); return; } $status_text = "📊 وضعیت حساب شما:\n\n"; if (isset($user_data['subscription_expiry']) && $user_data['subscription_expiry'] > time()) { $status_text .= "🌟 **نوع حساب:** نامحدود\n"; $status_text .= "🗓 **تاریخ انقضا:** " . date("Y-m-d H:i", $user_data['subscription_expiry']); } else { $credits = $user_data['free_credits_remaining'] ?? 10; $status_text .= "▫️ **نوع حساب:** رایگان\n"; $status_text .= "🎙 **اعتبار باقی‌مانده:** " . $credits . " عدد"; } sendMessage($chat_id, $status_text); }
+function startSpeakerSelection($chat_id) { $user_data = loadUserData($chat_id); if ($user_data === null) { sendMessage($chat_id, "خطا در دسترسی به حساب."); return; } $user_data['state'] = 'awaiting_speaker_selection'; saveUserData($chat_id, $user_data); $media_group = []; $caption_text = "گالری گویندگان\n\nلطفا **شماره** گوینده مورد نظر خود را از روی عکس‌ها ارسال کنید."; foreach (SPEAKER_PAGES as $index => $url) { $media_item = ['type' => 'photo', 'media' => $url]; if ($index === 0) { $media_item['caption'] = $caption_text; $media_item['parse_mode'] = 'Markdown'; } $media_group[] = $media_item; } telegramApiRequest('sendMediaGroup', ['chat_id' => $chat_id, 'media' => json_encode($media_group)]); sendMessage($chat_id, "برای لغو انتخاب، دستور /cancel را ارسال کنید."); }
+function showSupportMenu($chat_id) { $supportKeyboard = ['inline_keyboard' => [[['text' => '💬 ارتباط با پشتیبانی', 'url' => 'https://t.me/' . SUPPORT_USERNAME]]]]; sendMessage($chat_id, "برای ارتباط با پشتیبانی روی دکمه زیر کلیک کنید:", json_encode($supportKeyboard)); }
+function showHelp($chat_id) { $help_text = "راهنمای استفاده از ربات آلفا:\n\n"; $help_text .= "1️⃣ **تبدیل ساده متن:**\nکافیست متن خود را ارسال کنید.\n\n"; $help_text .= "2️⃣ **افزودن لحن و احساس:**\nتوصیف لحن را در انتهای متن خود و داخل پرانتز `()` قرار دهید.\n*مثال:* `سلام (با لحنی خوشحال)`\n\n"; $help_text .= "3️⃣ **تغییر گوینده:**\nاز منو، گزینه '🎤 تغییر گوینده' را انتخاب کنید.\n\n"; $help_text .= "4️⃣ **تنظیم خلاقیت:**\nاز منو، گزینه '🌡️ تنظیم خلاقیت' را انتخاب کنید.\n\n"; $help_text .= "5️⃣ **دعوت از دوستان:**\nاز منو، گزینه '👥 دعوت از دوستان' را انتخاب کرده و با لینک اختصاصی خود، برای هر عضویت جدید ۸ اعتبار رایگان هدیه بگیرید."; sendMessage($chat_id, $help_text); }
+function showReferralInfo($chat_id) { $referral_link = 'https://t.me/' . BOT_USERNAME . '?start=ref_' . $chat_id; $message = "🎉 **دوستان خود را دعوت کنید و اعتبار رایگان هدیه بگیرید!**\n\n"; $message .= "با لینک اختصاصی زیر، دوستان خود را به ربات آلفا دعوت کنید.\n\n"; $message .= "به ازای هر دوستی که برای اولین بار از طریق لینک شما ربات را استارت کند، **۸ اعتبار رایگان** برای تولید صدا به شما هدیه داده می‌شود.\n\n"; $message .= "لینک دعوت شما:\n`" . $referral_link . "`"; sendMessage($chat_id, $message); }
+function showTemperatureMenu($chat_id) { $tempKeyboard = ['inline_keyboard' => [[['text' => 'کم (پایدار)', 'callback_data' => 'settemp_0.3'], ['text' => 'متوسط', 'callback_data' => 'settemp_0.7']], [['text' => 'پیش‌فرض (بهینه)', 'callback_data' => 'settemp_0.9'], ['text' => 'زیاد (احساسی)', 'callback_data' => 'settemp_1.2']]]]; sendMessage($chat_id, "لطفا میزان خلاقیت و پویایی صدا را انتخاب کنید:", json_encode($tempKeyboard)); }
+function sendMessage($chat_id, $message, $reply_markup = null) { $params = ['chat_id' => $chat_id, 'text' => $message, 'parse_mode' => 'Markdown']; if ($reply_markup) { $params['reply_markup'] = $reply_markup; } telegramApiRequest('sendMessage', $params); }
+function editMessageText($chat_id, $message_id, $text, $reply_markup = null) { $params = ['chat_id' => $chat_id, 'message_id' => $message_id, 'text' => $text, 'parse_mode' => 'Markdown']; if ($reply_markup) { $params['reply_markup'] = $reply_markup; } telegramApiRequest('editMessageText', $params); }
+function deleteMessage($chat_id, $message_id) { telegramApiRequest('deleteMessage', ['chat_id' => $chat_id, 'message_id' => $message_id]); }
+function answerCallbackQuery($callback_query_id, $text = '', $show_alert = false) { telegramApiRequest('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => $text, 'show_alert' => $show_alert]); }
+function sendSticker($chat_id, $file_id) { if (!$file_id || strpos($file_id, 'PLACEHOLDER') !== false) return; telegramApiRequest('sendSticker', ['chat_id' => $chat_id, 'sticker' => $file_id]); }
+function sendAudio($chat_id, $audio_data, $caption = '') { $temp_file_path = sys_get_temp_dir() . '/' . uniqid('tts_audio_', true) . '.wav'; file_put_contents($temp_file_path, $audio_data); telegramApiRequest('sendAudio', ['chat_id' => $chat_id, 'audio' => new CURLFile($temp_file_path, 'audio/wav', 'voice.wav'), 'caption' => $caption]); @unlink($temp_file_path); }
+function convertPersianNumbersToEnglish($string) { $persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹']; $english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']; return str_replace($persian, $english, $string); }
+function splitTextIntoChunks($text, $maxLength = 2500) { $chunks = []; $text = trim($text); if (mb_strlen($text, 'UTF-8') <= $maxLength) { return [$text]; } while (mb_strlen($text, 'UTF-8') > 0) { if (mb_strlen($text, 'UTF-8') <= $maxLength) { $chunks[] = $text; break; } $chunk_candidate = mb_substr($text, 0, $maxLength, 'UTF-8'); $split_pos = -1; $delimiters = ["\n", ".", "!", "؟", "،", " "]; foreach ($delimiters as $delimiter) { $last_pos = mb_strrpos($chunk_candidate, $delimiter, 0, 'UTF-8'); if ($last_pos !== false) { $split_pos = $last_pos + mb_strlen($delimiter, 'UTF-8'); break; } } if ($split_pos === -1) { $split_pos = $maxLength; } $chunks[] = trim(mb_substr($text, 0, $split_pos, 'UTF-8')); $text = trim(mb_substr($text, $split_pos, null, 'UTF-8')); } return array_filter($chunks, function($chunk) { return !empty($chunk); }); }
+function mergeWavFiles($files) { if (empty($files)) return null; if (count($files) == 1) return $files[0]; $first_file_content = @file_get_contents($files[0]); if(!$first_file_content) return null; $header = substr($first_file_content, 0, 44); $all_data = substr($first_file_content, 44); for ($i = 1; $i < count($files); $i++) { $content = @file_get_contents($files[$i]); if ($content) { $all_data .= substr($content, 44); } } $data_size = strlen($all_data); $file_size = $data_size + 36; $header = substr_replace($header, pack('V', $file_size), 4, 4); $header = substr_replace($header, pack('V', $data_size), 40, 4); $final_file_path = tempnam(sys_get_temp_dir(), 'tts_merged') . '.wav'; file_put_contents($final_file_path, $header . $all_data); return $final_file_path; }
 ?>
