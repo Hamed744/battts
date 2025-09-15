@@ -1,8 +1,8 @@
 <?php
 // ===================================================================
-// ALPHA TTS BOT - RENDER.COM SINGLE-FILE DEPLOYMENT
-// This script runs on Render.com and connects to a user data API on aisada.ir
-// Version: 2.0
+// ALPHA TTS BOT - RENDER.COM SINGLE-FILE DEPLOYMENT (DISKLESS)
+// This version stores ALL data (users and payments) via the API on aisada.ir
+// Version: 3.0
 // ===================================================================
 
 // ===================================================================
@@ -15,19 +15,21 @@ define('ZARINPAL_MERCHANT_ID', getenv('ZARINPAL_MERCHANT_ID'));
 define('BOT_USERNAME', getenv('BOT_USERNAME') ?: 'Alphattsbot');
 define('SUPPORT_USERNAME', getenv('SUPPORT_USERNAME') ?: 'ezmarynoori');
 
-// تنظیمات اتصال به API مدیریت کاربران در هاست شما
-define('USER_API_URL', getenv('USER_API_URL')); // e.g., https://www.aisada.ir/bots/user_api.php
-define('USER_API_SECRET', getenv('USER_API_SECRET')); // The same secret key from your user_api.php
+// تنظیمات اتصال به API روی هاست شما
+define('USER_API_URL', getenv('USER_API_URL')); // https://www.aisada.ir/bots/user_api.php
+define('USER_API_SECRET', getenv('USER_API_SECRET')); // The secret key
 
-// مسیر ذخیره‌سازی موقت پرداخت‌ها (روی دیسک پایدار Render)
-define('PERSISTENT_STORAGE_PATH', getenv('RENDER_DISK_PATH') ?: __DIR__ . '/persistent_data');
-define('PAYMENTS_PATH', PERSISTENT_STORAGE_PATH . '/payments/');
-if (!is_dir(PAYMENTS_PATH)) { mkdir(PAYMENTS_PATH, 0777, true); }
-
-// آدرس عمومی سرویس شما در Render (برای کال‌بک زرین‌پال)
+// آدرس عمومی سرویس شما در Render
 define('CALLBACK_URL', 'https://' . ($_SERVER['HTTP_HOST'] ?? 'YOUR_APP_NAME.onrender.com') . '/');
 
+// (دیگر نیازی به RENDER_DISK_PATH و PAYMENTS_PATH نداریم)
 
+// (بقیه کد بدون تغییر باقی می‌ماند، فقط توابع handleCallbackQuery و handleZarinpalCallback آپدیت می‌شوند)
+// ...
+// ... کدهای بخش ۲ و ۳ (تنظیمات ثابت و مسیریاب) را از پاسخ قبلی کپی کنید ...
+// ...
+
+// کد کامل از اینجا شروع می‌شود
 // ===================================================================
 // ۲. تنظیمات ثابت ربات
 // ===================================================================
@@ -83,7 +85,6 @@ $mainMenu = ['keyboard' => [[['text' => '🎤 تغییر گوینده'], ['text'
 // ===================================================================
 // ۳. مسیریاب اصلی (Router)
 // ===================================================================
-// این بخش درخواست‌های تلگرام و زرین‌پال را تشخیص داده و به تابع مربوطه هدایت می‌کند.
 if (isset($_GET['Authority']) && isset($_GET['Status'])) {
     handleZarinpalCallback();
     exit();
@@ -91,10 +92,9 @@ if (isset($_GET['Authority']) && isset($_GET['Status'])) {
     $update_json = file_get_contents('php://input');
     if (empty($update_json)) {
         http_response_code(200);
-        echo "Alpha TTS Bot is alive on Render.com.";
+        echo "Alpha TTS Bot is alive on Render.com (Diskless).";
         exit();
     }
-    // پاسخ فوری 200 به تلگرام برای جلوگیری از تکرار درخواست
     http_response_code(200);
     if (function_exists('fastcgi_finish_request')) {
         fastcgi_finish_request();
@@ -111,11 +111,14 @@ if (isset($_GET['Authority']) && isset($_GET['Status'])) {
 
 
 // ===================================================================
-// ۴. توابع اصلی ربات (پردازش پیام‌ها و کال‌بک‌ها)
+// ۴. توابع اصلی ربات
 // ===================================================================
 
 function handleMessage($message) {
     global $mainMenu, $speakers, $speaker_count;
+    // ... محتوای این تابع هیچ تغییری نکرده و دقیقا همانند پاسخ قبل است ...
+    // ... برای کوتاهی حذف شده ...
+    // ... لطفا از پاسخ قبلی کپی کنید ...
     $chat_id = $message['from']['id'];
     $user_data = loadUserData($chat_id);
     if ($user_data === null) { 
@@ -263,6 +266,7 @@ function handleMessage($message) {
     }
 }
 
+
 function handleCallbackQuery($callback_query) {
     $chat_id = $callback_query['message']['chat']['id'];
     $message_id = $callback_query['message']['message_id'];
@@ -295,7 +299,9 @@ function handleCallbackQuery($callback_query) {
         if (isset($result['data']['code']) && $result['data']['code'] == 100) {
             $authority = $result['data']['authority'];
             $payment_url = 'https://www.zarinpal.com/pg/StartPay/' . $authority;
-            file_put_contents(PAYMENTS_PATH . $authority . '.json', json_encode(['chat_id' => $chat_id, 'plan_id' => $plan_id, 'amount' => $price_in_rial]));
+            // *** تغییر کلیدی: ذخیره اطلاعات پرداخت از طریق API در هاست ***
+            savePaymentData($authority, ['chat_id' => $chat_id, 'plan_id' => $plan_id, 'amount' => $price_in_rial]);
+            
             $keyboard = ['inline_keyboard' => [[['text' => '✅ پرداخت آنلاین', 'url' => $payment_url]]]];
             editMessageText($chat_id, $message_id, "برای تکمیل خرید اشتراک **" . $plan['name'] . "** لطفا روی دکمه زیر کلیک کنید:", json_encode($keyboard));
         } else {
@@ -308,9 +314,15 @@ function handleCallbackQuery($callback_query) {
 function handleZarinpalCallback() {
     $authority = $_GET['Authority'];
     $status = $_GET['Status'];
-    $payment_data_json = @file_get_contents(PAYMENTS_PATH . $authority . '.json');
-    if (!$payment_data_json) { echo "تراکنش یافت نشد."; return; }
-    $payment_data = json_decode($payment_data_json, true);
+    
+    // *** تغییر کلیدی: خواندن اطلاعات پرداخت از طریق API از هاست ***
+    $payment_data = loadPaymentData($authority);
+    
+    if ($payment_data === null) {
+        echo "تراکنش یافت نشد یا منقضی شده است.";
+        return;
+    }
+    
     $chat_id = $payment_data['chat_id'];
     $plan_id = $payment_data['plan_id'];
     $amount = $payment_data['amount'];
@@ -323,7 +335,7 @@ function handleZarinpalCallback() {
         curl_close($ch);
         $result = json_decode($result_json, true);
 
-        if (isset($result['data']['code']) && $result['data']['code'] == 100) {
+        if (isset($result['data']['code']) && ($result['data']['code'] == 100 || $result['data']['code'] == 101)) { // 101 for already verified
             $plan = SUBSCRIPTION_PLANS[$plan_id];
             $user_data = loadUserData($chat_id);
             if ($user_data === null) { echo "خطا در پردازش اطلاعات حساب."; return; }
@@ -342,21 +354,24 @@ function handleZarinpalCallback() {
         sendMessage($chat_id, "❌ شما تراکنش را لغو کردید.");
         echo "تراکنش لغو شد.";
     }
-    @unlink(PAYMENTS_PATH . $authority . '.json');
+    
+    // *** تغییر کلیدی: حذف اطلاعات پرداخت از طریق API در هاست ***
+    deletePaymentData($authority);
 }
 
+// ... بقیه توابع (بخش ۵، ۶ و ۷) بدون هیچ تغییری از پاسخ قبلی کپی شوند ...
+// ... فقط توابع جدید مدیریت پرداخت اضافه می‌شوند ...
 
 // ===================================================================
 // ۵. توابع کمکی و مدیریتی (ارتباط با API ها)
 // ===================================================================
 
-function loadUserData($chat_id) {
-    $payload = json_encode(['action' => 'load', 'chat_id' => $chat_id]);
+function apiRequest($payload) {
     $ch = curl_init(USER_API_URL);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_POSTFIELDS => json_encode($payload),
         CURLOPT_HTTPHEADER => [
             'Content-Type: application/json',
             'X-Api-Secret: ' . USER_API_SECRET
@@ -370,31 +385,33 @@ function loadUserData($chat_id) {
     if ($http_code == 200 && $response_json) {
         $response = json_decode($response_json, true);
         if ($response && $response['status'] === 'success') {
-            return $response['data'];
+            return $response['data'] ?? true;
         }
     }
-    // در صورت بروز خطا، لاگ‌گیری می‌تواند مفید باشد.
-    // error_log("Failed to load user data for $chat_id. HTTP Code: $http_code");
     return null;
 }
 
-function saveUserData($chat_id, $data) {
-    $payload = json_encode(['action' => 'save', 'chat_id' => $chat_id, 'data' => $data]);
-    $ch = curl_init(USER_API_URL);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => $payload,
-        CURLOPT_HTTPHEADER => [
-            'Content-Type: application/json',
-            'X-Api-Secret: ' . USER_API_SECRET
-        ],
-        // استفاده از Timeout کم، چون نیازی به منتظر ماندن برای پاسخ نداریم
-        CURLOPT_TIMEOUT_MS => 2000 
-    ]);
-    curl_exec($ch);
-    curl_close($ch);
+function loadUserData($chat_id) {
+    return apiRequest(['action' => 'load_user', 'chat_id' => $chat_id]);
 }
+
+function saveUserData($chat_id, $data) {
+    apiRequest(['action' => 'save_user', 'chat_id' => $chat_id, 'data' => $data]);
+}
+
+// توابع جدید برای مدیریت پرداخت
+function loadPaymentData($authority) {
+    return apiRequest(['action' => 'load_payment', 'authority' => $authority]);
+}
+
+function savePaymentData($authority, $data) {
+    apiRequest(['action' => 'save_payment', 'authority' => $authority, 'data' => $data]);
+}
+
+function deletePaymentData($authority) {
+    apiRequest(['action' => 'delete_payment', 'authority' => $authority]);
+}
+
 
 function canUserConvert($chat_id) {
     $user_data = loadUserData($chat_id);
@@ -423,6 +440,9 @@ function telegramApiRequest($method, $parameters = []) {
     curl_close($ch);
     return $response;
 }
+
+// (بقیه توابع بخش ۶ و ۷ را به طور کامل از پاسخ قبلی اینجا کپی کنید)
+// showSubscriptionMenu, showAccountStatus, ..., mergeWavFiles
 
 // ===================================================================
 // ۶. توابع نمایش منو‌ها و پیام‌ها
