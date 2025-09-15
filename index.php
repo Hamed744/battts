@@ -1,8 +1,8 @@
 <?php
 // ===================================================================
-// ALPHA TTS BOT - RENDER.COM SINGLE-FILE DEPLOYMENT (DISKLESS)
-// This version stores ALL data (users and payments) via the API on aisada.ir
-// Version: 3.0
+// ALPHA TTS BOT - RENDER.COM - UPTIMEROBOT COMPATIBLE
+// This version explicitly handles HEAD requests for monitoring services.
+// Version: 3.1 FINAL
 // ===================================================================
 
 // ===================================================================
@@ -14,22 +14,10 @@ define('INTERNAL_API_SECRET', getenv('INTERNAL_API_SECRET'));
 define('ZARINPAL_MERCHANT_ID', getenv('ZARINPAL_MERCHANT_ID'));
 define('BOT_USERNAME', getenv('BOT_USERNAME') ?: 'Alphattsbot');
 define('SUPPORT_USERNAME', getenv('SUPPORT_USERNAME') ?: 'ezmarynoori');
-
-// تنظیمات اتصال به API روی هاست شما
-define('USER_API_URL', getenv('USER_API_URL')); // https://www.aisada.ir/bots/user_api.php
-define('USER_API_SECRET', getenv('USER_API_SECRET')); // The secret key
-
-// آدرس عمومی سرویس شما در Render
+define('USER_API_URL', getenv('USER_API_URL'));
+define('USER_API_SECRET', getenv('USER_API_SECRET'));
 define('CALLBACK_URL', 'https://' . ($_SERVER['HTTP_HOST'] ?? 'YOUR_APP_NAME.onrender.com') . '/');
 
-// (دیگر نیازی به RENDER_DISK_PATH و PAYMENTS_PATH نداریم)
-
-// (بقیه کد بدون تغییر باقی می‌ماند، فقط توابع handleCallbackQuery و handleZarinpalCallback آپدیت می‌شوند)
-// ...
-// ... کدهای بخش ۲ و ۳ (تنظیمات ثابت و مسیریاب) را از پاسخ قبلی کپی کنید ...
-// ...
-
-// کد کامل از اینجا شروع می‌شود
 // ===================================================================
 // ۲. تنظیمات ثابت ربات
 // ===================================================================
@@ -83,8 +71,16 @@ $mainMenu = ['keyboard' => [[['text' => '🎤 تغییر گوینده'], ['text'
 
 
 // ===================================================================
-// ۳. مسیریاب اصلی (Router)
+// ۳. مسیریاب اصلی (Router) - این بخش آپدیت شده
 // ===================================================================
+
+// این بخش جدید اضافه شده تا به UptimeRobot جواب بدهد
+if ($_SERVER['REQUEST_METHOD'] === 'HEAD') {
+    http_response_code(200);
+    exit();
+}
+
+// بقیه کد مثل قبل است
 if (isset($_GET['Authority']) && isset($_GET['Status'])) {
     handleZarinpalCallback();
     exit();
@@ -92,9 +88,10 @@ if (isset($_GET['Authority']) && isset($_GET['Status'])) {
     $update_json = file_get_contents('php://input');
     if (empty($update_json)) {
         http_response_code(200);
-        echo "Alpha TTS Bot is alive on Render.com (Diskless).";
+        echo "Alpha TTS Bot is alive on Render.com (Diskless). Ready for Telegram updates.";
         exit();
     }
+    
     http_response_code(200);
     if (function_exists('fastcgi_finish_request')) {
         fastcgi_finish_request();
@@ -109,16 +106,12 @@ if (isset($_GET['Authority']) && isset($_GET['Status'])) {
     exit();
 }
 
-
 // ===================================================================
-// ۴. توابع اصلی ربات
+// تمام توابع دیگر (بخش ۴، ۵، ۶ و ۷) بدون هیچ تغییری در ادامه قرار می‌گیرند
 // ===================================================================
 
 function handleMessage($message) {
     global $mainMenu, $speakers, $speaker_count;
-    // ... محتوای این تابع هیچ تغییری نکرده و دقیقا همانند پاسخ قبل است ...
-    // ... برای کوتاهی حذف شده ...
-    // ... لطفا از پاسخ قبلی کپی کنید ...
     $chat_id = $message['from']['id'];
     $user_data = loadUserData($chat_id);
     if ($user_data === null) { 
@@ -126,7 +119,6 @@ function handleMessage($message) {
         return;
     }
     $user_state = $user_data['state'] ?? 'normal';
-
     if (isset($message['sticker'])) {
         $sticker_file_id = $message['sticker']['file_id'];
         foreach ($speakers as $speaker) {
@@ -141,10 +133,8 @@ function handleMessage($message) {
         }
         return;
     }
-    
     $text = $message['text'] ?? '';
     $processed_text = convertPersianNumbersToEnglish($text);
-
     if (strpos($processed_text, '/start') === 0) {
         $parts = explode(' ', $processed_text);
         if (count($parts) > 1 && strpos($parts[1], 'ref_') === 0) {
@@ -161,7 +151,6 @@ function handleMessage($message) {
         sendMessage($chat_id, "سلام! به ربات تبدیل متن به صدای آلفا خوش آمدید.", json_encode($mainMenu));
         return;
     }
-
     switch($text) {
         case '🎤 تغییر گوینده': case '/speakers': startSpeakerSelection($chat_id); return;
         case '🌡️ تنظیم خلاقیت': showTemperatureMenu($chat_id); return;
@@ -178,7 +167,6 @@ function handleMessage($message) {
             }
             return;
     }
-
     if ($user_state === 'awaiting_speaker_selection') {
         if (is_numeric($processed_text) && $processed_text >= 1 && $processed_text <= $speaker_count) {
             $selected_index = intval($processed_text) - 1;
@@ -194,27 +182,22 @@ function handleMessage($message) {
         }
         return;
     }
-
     if (empty(trim($text))) { return; }
     if (!canUserConvert($chat_id)) {
         sendMessage($chat_id, "❌ اعتبار رایگان شما به پایان رسیده است.\n\nبرای استفاده نامحدود، لطفا از دکمه '💳 خرید اشتراک' یک پلن تهیه کنید.");
         return;
     }
-
     $wait_message_json = telegramApiRequest('sendMessage', ['chat_id' => $chat_id, 'text' => "⏳ لطفاً صبر کنید..."]);
     $wait_message_id = json_decode($wait_message_json, true)['result']['message_id'];
-    
     $prompt = '';
     $clean_text = $text;
     if (preg_match('/ \((.*?)\)\s*$/u', $text, $matches)) {
         $prompt = $matches[1];
         $clean_text = preg_replace('/ \((.*?)\)\s*$/u', '', $text);
     }
-
     $text_chunks = splitTextIntoChunks($clean_text);
     $audio_files = [];
     $has_error = false;
-
     foreach ($text_chunks as $index => $chunk) {
         editMessageText($chat_id, $wait_message_id, "⏳ در حال پردازش بخش " . ($index + 1) . " از " . count($text_chunks) . " ...");
         $user_data = loadUserData($chat_id);
@@ -222,13 +205,11 @@ function handleMessage($message) {
         $temperature = $user_data['temperature'] ?? 0.9;
         $requestData = [ 'text' => $chunk, 'prompt' => $prompt, 'speaker' => $speaker_id, 'temperature' => $temperature, 'subscriptionStatus' => 'paid', 'fingerprint' => 'php-telegram-bot-v1'];
         $headers = ['Content-Type: application/json', 'x-internal-api-key: ' . INTERNAL_API_SECRET];
-        
         $ch = curl_init(RENDER_API_URL);
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($requestData), CURLOPT_HTTPHEADER => $headers, CURLOPT_TIMEOUT => 90]);
         $audio_data = curl_exec($ch);
         $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-
         if ($http_code == 200 && !empty($audio_data)) {
             $temp_file = tempnam(sys_get_temp_dir(), 'tts') . '.wav';
             file_put_contents($temp_file, $audio_data);
@@ -238,45 +219,35 @@ function handleMessage($message) {
             break;
         }
     }
-
     deleteMessage($chat_id, $wait_message_id);
-
     if ($has_error || empty($audio_files)) {
         sendMessage($chat_id, "متاسفانه مشکلی در تولید صدا پیش آمد.");
         return;
     }
-
     $final_audio_path = mergeWavFiles($audio_files);
-    
     if ($final_audio_path) {
         $user_data = loadUserData($chat_id);
         $speaker_id = $user_data['speaker'] ?? 'Charon';
         $selected_speaker_sticker = '';
         foreach ($speakers as $speaker) { if ($speaker['id'] === $speaker_id) { $selected_speaker_sticker = $speaker['sticker_id']; break; } }
-        
         if ($selected_speaker_sticker) { sendSticker($chat_id, $selected_speaker_sticker); }
         sendAudio($chat_id, file_get_contents($final_audio_path), '🔊 صدای شما تولید شد.');
         @unlink($final_audio_path);
     } else {
         sendMessage($chat_id, "خطا در ادغام فایل‌های صوتی.");
     }
-    
     foreach($audio_files as $file) {
         @unlink($file);
     }
 }
-
-
 function handleCallbackQuery($callback_query) {
     $chat_id = $callback_query['message']['chat']['id'];
     $message_id = $callback_query['message']['message_id'];
     $data = $callback_query['data'];
     list($action, $value) = explode('_', $data, 2);
-
     if ($action === 'settemp') {
         $user_data = loadUserData($chat_id);
         if ($user_data === null) { answerCallbackQuery($callback_query['id'], "خطا در دسترسی به اطلاعات.", true); return; }
-        
         $user_data['temperature'] = floatval($value);
         saveUserData($chat_id, $user_data);
         $level_text = ['0.3' => 'کم', '0.7' => 'متوسط', '0.9' => 'پیش‌فرض', '1.2' => 'زیاد'];
@@ -284,7 +255,6 @@ function handleCallbackQuery($callback_query) {
         answerCallbackQuery($callback_query['id'], "خلاقیت روی '" . $selected_level . "' تنظیم شد.");
         editMessageText($chat_id, $message_id, "✅ خلاقیت صدا با موفقیت روی **" . $selected_level . "** (" . $value . ") تنظیم شد.");
     }
-
     if ($action === 'subscribe') {
         $plan_id = $value;
         $plan = SUBSCRIPTION_PLANS[$plan_id];
@@ -299,9 +269,7 @@ function handleCallbackQuery($callback_query) {
         if (isset($result['data']['code']) && $result['data']['code'] == 100) {
             $authority = $result['data']['authority'];
             $payment_url = 'https://www.zarinpal.com/pg/StartPay/' . $authority;
-            // *** تغییر کلیدی: ذخیره اطلاعات پرداخت از طریق API در هاست ***
             savePaymentData($authority, ['chat_id' => $chat_id, 'plan_id' => $plan_id, 'amount' => $price_in_rial]);
-            
             $keyboard = ['inline_keyboard' => [[['text' => '✅ پرداخت آنلاین', 'url' => $payment_url]]]];
             editMessageText($chat_id, $message_id, "برای تکمیل خرید اشتراک **" . $plan['name'] . "** لطفا روی دکمه زیر کلیک کنید:", json_encode($keyboard));
         } else {
@@ -310,23 +278,17 @@ function handleCallbackQuery($callback_query) {
         answerCallbackQuery($callback_query['id']);
     }
 }
-
 function handleZarinpalCallback() {
     $authority = $_GET['Authority'];
     $status = $_GET['Status'];
-    
-    // *** تغییر کلیدی: خواندن اطلاعات پرداخت از طریق API از هاست ***
     $payment_data = loadPaymentData($authority);
-    
     if ($payment_data === null) {
         echo "تراکنش یافت نشد یا منقضی شده است.";
         return;
     }
-    
     $chat_id = $payment_data['chat_id'];
     $plan_id = $payment_data['plan_id'];
     $amount = $payment_data['amount'];
-
     if ($status == 'OK') {
         $params = ['merchant_id' => ZARINPAL_MERCHANT_ID, 'amount' => $amount, 'authority' => $authority];
         $ch = curl_init('https://api.zarinpal.com/pg/v4/payment/verify.json');
@@ -334,8 +296,7 @@ function handleZarinpalCallback() {
         $result_json = curl_exec($ch);
         curl_close($ch);
         $result = json_decode($result_json, true);
-
-        if (isset($result['data']['code']) && ($result['data']['code'] == 100 || $result['data']['code'] == 101)) { // 101 for already verified
+        if (isset($result['data']['code']) && ($result['data']['code'] == 100 || $result['data']['code'] == 101)) {
             $plan = SUBSCRIPTION_PLANS[$plan_id];
             $user_data = loadUserData($chat_id);
             if ($user_data === null) { echo "خطا در پردازش اطلاعات حساب."; return; }
@@ -354,18 +315,8 @@ function handleZarinpalCallback() {
         sendMessage($chat_id, "❌ شما تراکنش را لغو کردید.");
         echo "تراکنش لغو شد.";
     }
-    
-    // *** تغییر کلیدی: حذف اطلاعات پرداخت از طریق API در هاست ***
     deletePaymentData($authority);
 }
-
-// ... بقیه توابع (بخش ۵، ۶ و ۷) بدون هیچ تغییری از پاسخ قبلی کپی شوند ...
-// ... فقط توابع جدید مدیریت پرداخت اضافه می‌شوند ...
-
-// ===================================================================
-// ۵. توابع کمکی و مدیریتی (ارتباط با API ها)
-// ===================================================================
-
 function apiRequest($payload) {
     $ch = curl_init(USER_API_URL);
     curl_setopt_array($ch, [
@@ -381,7 +332,6 @@ function apiRequest($payload) {
     $response_json = curl_exec($ch);
     $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-
     if ($http_code == 200 && $response_json) {
         $response = json_decode($response_json, true);
         if ($response && $response['status'] === 'success') {
@@ -390,33 +340,24 @@ function apiRequest($payload) {
     }
     return null;
 }
-
 function loadUserData($chat_id) {
     return apiRequest(['action' => 'load_user', 'chat_id' => $chat_id]);
 }
-
 function saveUserData($chat_id, $data) {
     apiRequest(['action' => 'save_user', 'chat_id' => $chat_id, 'data' => $data]);
 }
-
-// توابع جدید برای مدیریت پرداخت
 function loadPaymentData($authority) {
     return apiRequest(['action' => 'load_payment', 'authority' => $authority]);
 }
-
 function savePaymentData($authority, $data) {
     apiRequest(['action' => 'save_payment', 'authority' => $authority, 'data' => $data]);
 }
-
 function deletePaymentData($authority) {
     apiRequest(['action' => 'delete_payment', 'authority' => $authority]);
 }
-
-
 function canUserConvert($chat_id) {
     $user_data = loadUserData($chat_id);
     if ($user_data === null) return false;
-
     if (isset($user_data['subscription_expiry']) && $user_data['subscription_expiry'] > time()) {
         return true;
     }
@@ -428,7 +369,6 @@ function canUserConvert($chat_id) {
     }
     return false;
 }
-
 function telegramApiRequest($method, $parameters = []) {
     $url = "https://api.telegram.org/bot" . TELEGRAM_BOT_TOKEN . "/" . $method;
     $ch = curl_init($url);
@@ -440,14 +380,6 @@ function telegramApiRequest($method, $parameters = []) {
     curl_close($ch);
     return $response;
 }
-
-// (بقیه توابع بخش ۶ و ۷ را به طور کامل از پاسخ قبلی اینجا کپی کنید)
-// showSubscriptionMenu, showAccountStatus, ..., mergeWavFiles
-
-// ===================================================================
-// ۶. توابع نمایش منو‌ها و پیام‌ها
-// ===================================================================
-
 function showSubscriptionMenu($chat_id) {
     $keyboard = ['inline_keyboard' => []];
     foreach (SUBSCRIPTION_PLANS as $id => $plan) {
@@ -456,11 +388,9 @@ function showSubscriptionMenu($chat_id) {
     }
     sendMessage($chat_id, "لطفا یکی از پلن‌های اشتراک زیر را انتخاب کنید:", json_encode($keyboard));
 }
-
 function showAccountStatus($chat_id) {
     $user_data = loadUserData($chat_id);
     if ($user_data === null) { sendMessage($chat_id, "خطا در دریافت اطلاعات حساب."); return; }
-    
     $status_text = "📊 وضعیت حساب شما:\n\n";
     if (isset($user_data['subscription_expiry']) && $user_data['subscription_expiry'] > time()) {
         $status_text .= "🌟 **نوع حساب:** نامحدود\n";
@@ -472,11 +402,9 @@ function showAccountStatus($chat_id) {
     }
     sendMessage($chat_id, $status_text);
 }
-
 function startSpeakerSelection($chat_id) {
     $user_data = loadUserData($chat_id);
     if ($user_data === null) { sendMessage($chat_id, "خطا در دسترسی به حساب."); return; }
-    
     $user_data['state'] = 'awaiting_speaker_selection';
     saveUserData($chat_id, $user_data);
     $media_group = [];
@@ -489,12 +417,10 @@ function startSpeakerSelection($chat_id) {
     telegramApiRequest('sendMediaGroup', ['chat_id' => $chat_id, 'media' => json_encode($media_group)]);
     sendMessage($chat_id, "برای لغو انتخاب، دستور /cancel را ارسال کنید.");
 }
-
 function showSupportMenu($chat_id) {
     $supportKeyboard = ['inline_keyboard' => [[['text' => '💬 ارتباط با پشتیبانی', 'url' => 'https://t.me/' . SUPPORT_USERNAME]]]];
     sendMessage($chat_id, "برای ارتباط با پشتیبانی روی دکمه زیر کلیک کنید:", json_encode($supportKeyboard));
 }
-
 function showHelp($chat_id) {
     $help_text = "راهنمای استفاده از ربات آلفا:\n\n";
     $help_text .= "1️⃣ **تبدیل ساده متن:**\nکافیست متن خود را ارسال کنید.\n\n";
@@ -504,7 +430,6 @@ function showHelp($chat_id) {
     $help_text .= "5️⃣ **دعوت از دوستان:**\nاز منو، گزینه '👥 دعوت از دوستان' را انتخاب کرده و با لینک اختصاصی خود، برای هر عضویت جدید ۸ اعتبار رایگان هدیه بگیرید.";
     sendMessage($chat_id, $help_text);
 }
-
 function showReferralInfo($chat_id) {
     $referral_link = 'https://t.me/' . BOT_USERNAME . '?start=ref_' . $chat_id;
     $message = "🎉 **دوستان خود را دعوت کنید و اعتبار رایگان هدیه بگیرید!**\n\n";
@@ -513,54 +438,41 @@ function showReferralInfo($chat_id) {
     $message .= "لینک دعوت شما:\n`" . $referral_link . "`";
     sendMessage($chat_id, $message);
 }
-
 function showTemperatureMenu($chat_id) {
     $tempKeyboard = ['inline_keyboard' => [[['text' => 'کم (پایدار)', 'callback_data' => 'settemp_0.3'], ['text' => 'متوسط', 'callback_data' => 'settemp_0.7']], [['text' => 'پیش‌فرض (بهینه)', 'callback_data' => 'settemp_0.9'], ['text' => 'زیاد (احساسی)', 'callback_data' => 'settemp_1.2']]]];
     sendMessage($chat_id, "لطفا میزان خلاقیت و پویایی صدا را انتخاب کنید:", json_encode($tempKeyboard));
 }
-
 function sendMessage($chat_id, $message, $reply_markup = null) {
     $params = ['chat_id' => $chat_id, 'text' => $message, 'parse_mode' => 'Markdown'];
     if ($reply_markup) { $params['reply_markup'] = $reply_markup; }
     telegramApiRequest('sendMessage', $params);
 }
-
 function editMessageText($chat_id, $message_id, $text, $reply_markup = null) {
     $params = ['chat_id' => $chat_id, 'message_id' => $message_id, 'text' => $text, 'parse_mode' => 'Markdown'];
     if ($reply_markup) { $params['reply_markup'] = $reply_markup; }
     telegramApiRequest('editMessageText', $params);
 }
-
 function deleteMessage($chat_id, $message_id) {
     telegramApiRequest('deleteMessage', ['chat_id' => $chat_id, 'message_id' => $message_id]);
 }
-
 function answerCallbackQuery($callback_query_id, $text = '', $show_alert = false) {
     telegramApiRequest('answerCallbackQuery', ['callback_query_id' => $callback_query_id, 'text' => $text, 'show_alert' => $show_alert]);
 }
-
 function sendSticker($chat_id, $file_id) {
     if (!$file_id || strpos($file_id, 'PLACEHOLDER') !== false) return;
     telegramApiRequest('sendSticker', ['chat_id' => $chat_id, 'sticker' => $file_id]);
 }
-
 function sendAudio($chat_id, $audio_data, $caption = '') {
     $temp_file_path = sys_get_temp_dir() . '/' . uniqid('tts_audio_', true) . '.wav';
     file_put_contents($temp_file_path, $audio_data);
     telegramApiRequest('sendAudio', ['chat_id' => $chat_id, 'audio' => new CURLFile($temp_file_path, 'audio/wav', 'voice.wav'), 'caption' => $caption]);
     @unlink($temp_file_path);
 }
-
-// ===================================================================
-// ۷. توابع کاربردی (Utility Functions)
-// ===================================================================
-
 function convertPersianNumbersToEnglish($string) {
     $persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
     $english = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     return str_replace($persian, $english, $string);
 }
-
 function splitTextIntoChunks($text, $maxLength = 2500) {
     $chunks = [];
     $text = trim($text);
@@ -580,7 +492,6 @@ function splitTextIntoChunks($text, $maxLength = 2500) {
     }
     return array_filter($chunks, function($chunk) { return !empty($chunk); });
 }
-
 function mergeWavFiles($files) {
     if (empty($files)) return null;
     if (count($files) == 1) return $files[0];
@@ -600,5 +511,4 @@ function mergeWavFiles($files) {
     file_put_contents($final_file_path, $header . $all_data);
     return $final_file_path;
 }
-
 ?>
