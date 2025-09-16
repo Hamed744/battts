@@ -1,7 +1,7 @@
 <?php
 // ===================================================================
 // ALPHA TTS BOT - RENDER.COM - FINAL WITH LOCKING SYSTEM
-// Version: 4.3 - Made referral link clickable in caption
+// Version: 4.4 - Added explanation for creativity/temperature setting
 // ===================================================================
 
 define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
@@ -381,17 +381,13 @@ function showReferralInfo($chat_id) {
     $referral_link = 'https://t.me/' . BOT_USERNAME . '?start=ref_' . $chat_id;
     $banner_image_url = 'https://uploadkon.ir/uploads/501e16_251758015004030.jpg';
 
-    // متن کپشن برای بنر
     $caption = "💎 قویترین هوش مصنوعی تبدیل متن به صدای فارسی\n\n";
     $caption .= "🎤 متن دلخواهت رو وارد کن فایل صوتی با صدای شخصیت های مختلف زن و مرد تحویل بگیر\n\n";
     $caption .= "🗣 تبدیل متن با بیش از 25 گوینده و پشتیبانی از همه زبان ها\n\n";
-    // تغییر در این خط: بک‌تیک‌ها حذف شدند تا لینک قابل کلیک باشد
     $caption .= "🎁 ربات رو استارت کن و لذت ببر 👇\n\n" . $referral_link;
 
-    // ارسال بنر (تصویر + کپشن)
     sendPhoto($chat_id, $banner_image_url, $caption);
 
-    // ارسال پیام متنی جداگانه بعد از بنر
     $follow_up_message = "برای دریافت 💳 اعتبار رایگان بنر بالا را به اشتراک بگزارید. برای هر نفر که با لینک شما وارد ربات شود 8 تبدیل رایگان هدیه 🎁 دریافت میکنید.";
     sendMessage($chat_id, $follow_up_message);
 }
@@ -400,8 +396,6 @@ function sendPhoto($chat_id, $photo_url, $caption = null, $reply_markup = null) 
     $params = ['chat_id' => $chat_id, 'photo' => $photo_url];
     if ($caption) {
         $params['caption'] = $caption;
-        // parse_mode را حذف میکنیم تا تلگرام خودش لینک را شناسایی کند و نیازی به فرمت Markdown نباشد
-        // $params['parse_mode'] = 'Markdown'; 
     }
     if ($reply_markup) {
         $params['reply_markup'] = $reply_markup;
@@ -409,10 +403,31 @@ function sendPhoto($chat_id, $photo_url, $caption = null, $reply_markup = null) 
     telegramApiRequest('sendPhoto', $params);
 }
 
+// ===============================================
+// START OF MODIFIED SECTION
+// ===============================================
 function showTemperatureMenu($chat_id) {
-    $tempKeyboard = ['inline_keyboard' => [[['text' => 'کم (پایدار)', 'callback_data' => 'settemp_0.3'], ['text' => 'متوسط', 'callback_data' => 'settemp_0.7']], [['text' => 'پیش‌فرض (بهینه)', 'callback_data' => 'settemp_0.9'], ['text' => 'زیاد (احساسی)', 'callback_data' => 'settemp_1.2']]]];
-    sendMessage($chat_id, "لطفا میزان خلاقیت و پویایی صدا را انتخاب کنید:", json_encode($tempKeyboard));
+    // 1. Send the explanatory message first
+    $explanation_text = "🌡️ **خلاقیت و پویایی صدا**\n\n";
+    $explanation_text .= "این پارامتر، میزان \"غیرقابل پیش‌بینی بودن\" و تنوع در صدای خروجی را کنترل می‌کند.\n\n";
+    $explanation_text .= "🔹 **مقادیر بالاتر (نزدیک به ۱.۵):**\nصدایی بسیار متنوع، احساسی و پویا ایجاد می‌کند. ایده‌آل برای محتوای خلاقانه و هنری.\n\n";
+    $explanation_text .= "🔸 **مقادیر پایین‌تر (نزدیک به ۰.۱):**\nصدایی پایدار، یکنواخت و قابل پیش‌بینی‌تر تولید می‌کند. مناسب برای خوانش متون رسمی و خبری.\n\n";
+    $explanation_text .= "*در واقع اینجا مشخص میشه که هوش مصنوعی چقدر خلاقیت نشون بده در تبدیل متن به صدا.*";
+    
+    sendMessage($chat_id, $explanation_text);
+
+    // 2. Then, send the message with the selection buttons
+    $tempKeyboard = ['inline_keyboard' => [
+        [['text' => 'کم (پایدار)', 'callback_data' => 'settemp_0.3'], ['text' => 'متوسط', 'callback_data' => 'settemp_0.7']],
+        [['text' => 'پیش‌فرض (بهینه)', 'callback_data' => 'settemp_0.9'], ['text' => 'زیاد (احساسی)', 'callback_data' => 'settemp_1.2']]
+    ]];
+    
+    sendMessage($chat_id, "حالا لطفا سطح خلاقیت مورد نظر خود را انتخاب کنید:", json_encode($tempKeyboard));
 }
+// ===============================================
+// END OF MODIFIED SECTION
+// ===============================================
+
 function sendMessage($chat_id, $message, $reply_markup = null) {
     $params = ['chat_id' => $chat_id, 'text' => $message, 'parse_mode' => 'Markdown'];
     if ($reply_markup) { $params['reply_markup'] = $reply_markup; }
