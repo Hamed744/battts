@@ -1,7 +1,7 @@
 <?php
 // ===================================================================
 // ALPHA TTS & STT BOT - RENDER.COM
-// Version: 5.3 - Updated main keyboard layout for better UX
+// Version: 5.4 - Re-implemented banner and detailed creativity explanation
 // ===================================================================
 
 define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
@@ -35,7 +35,6 @@ $speakers = [
 ];
 $speaker_count = count($speakers);
 
-// === UPDATED MAIN KEYBOARD LAYOUT ===
 $mainMenu = [
     'keyboard' => [
         [['text' => 'تبدیل متن به صدا 🎙️']],
@@ -133,14 +132,11 @@ function handleMessage($message) {
     }
     switch($text) {
         case 'تبدیل متن به صدا 🎙️': case '/speakers': startSpeakerSelection($chat_id); return;
-        
-        // === UPDATED CASE WITH NEW EMOJI ===
         case 'تبدیل صوت به متن 🧾':
             $user_data['state'] = 'awaiting_audio';
             saveUserData($chat_id, $user_data);
             sendMessage($chat_id, "لطفا فایل صوتی یا پیام صوتی (voice) خود را برای تبدیل به متن ارسال کنید.");
             return;
-
         case '🌡️ تنظیم خلاقیت': showTemperatureMenu($chat_id); return;
         case '💳 خرید اشتراک': showSubscriptionMenu($chat_id); return;
         case '👥 دعوت از دوستان': showReferralInfo($chat_id); return;
@@ -318,8 +314,6 @@ function handleAudioTranscription($chat_id, $file_id) {
     }
     editMessageText($chat_id, $wait_message_id, "❌ زمان پردازش فایل صوتی شما بیش از حد طولانی شد. لطفاً فایل کوتاه‌تری را امتحان کنید.");
 }
-
-// ... The rest of the functions (release_lock, handleCallbackQuery, etc.) remain unchanged ...
 
 function release_lock($chat_id) {
     $user_data = loadUserData($chat_id);
@@ -503,18 +497,53 @@ function showHelp($chat_id) {
     $help_text .= "5️⃣ **دعوت از دوستان:**\nاز منو، گزینه '👥 دعوت از دوستان' را انتخاب کرده و با لینک اختصاصی خود، برای هر عضویت جدید ۸ اعتبار رایگان هدیه بگیرید.";
     sendMessage($chat_id, $help_text);
 }
+
+// === RE-IMPLEMENTED REFERRAL BANNER FUNCTION ===
 function showReferralInfo($chat_id) {
     $referral_link = 'https://t.me/' . BOT_USERNAME . '?start=ref_' . $chat_id;
-    $message = "🎉 **دوستان خود را دعوت کنید و اعتبار رایگان هدیه بگیرید!**\n\n";
-    $message .= "با لینک اختصاصی زیر، دوستان خود را به ربات آلفا دعوت کنید.\n\n";
-    $message .= "به ازای هر دوستی که برای اولین بار از طریق لینک شما ربات را استارت کند، **۸ اعتبار رایگان** برای تولید صدا به شما هدیه داده می‌شود.\n\n";
-    $message .= "لینک دعوت شما:\n`" . $referral_link . "`";
-    sendMessage($chat_id, $message);
+    $banner_image_url = 'https://uploadkon.ir/uploads/501e16_251758015004030.jpg';
+
+    $caption = "💎 قویترین هوش مصنوعی تبدیل متن به صدای فارسی\n\n";
+    $caption .= "🎤 متن دلخواهت رو وارد کن فایل صوتی با صدای شخصیت های مختلف زن و مرد تحویل بگیر\n\n";
+    $caption .= "🗣 تبدیل متن با بیش از 25 گوینده و پشتیبانی از همه زبان ها\n\n";
+    $caption .= "🎁 ربات رو استارت کن و لذت ببر 👇\n\n" . $referral_link;
+
+    sendPhoto($chat_id, $banner_image_url, $caption);
+
+    $follow_up_message = "برای دریافت 💳 اعتبار رایگان بنر بالا را به اشتراک بگزارید. برای هر نفر که با لینک شما وارد ربات شود 8 تبدیل رایگان هدیه 🎁 دریافت میکنید.";
+    sendMessage($chat_id, $follow_up_message);
 }
+
+// === ADDED HELPER FUNCTION FOR SENDING PHOTOS ===
+function sendPhoto($chat_id, $photo_url, $caption = null, $reply_markup = null) {
+    $params = ['chat_id' => $chat_id, 'photo' => $photo_url];
+    if ($caption) {
+        $params['caption'] = $caption;
+    }
+    if ($reply_markup) {
+        $params['reply_markup'] = $reply_markup;
+    }
+    telegramApiRequest('sendPhoto', $params);
+}
+
+// === RE-IMPLEMENTED DETAILED TEMPERATURE MENU FUNCTION ===
 function showTemperatureMenu($chat_id) {
-    $tempKeyboard = ['inline_keyboard' => [[['text' => 'کم (پایدار)', 'callback_data' => 'settemp_0.3'], ['text' => 'متوسط', 'callback_data' => 'settemp_0.7']], [['text' => 'پیش‌فرض (بهینه)', 'callback_data' => 'settemp_0.9'], ['text' => 'زیاد (احساسی)', 'callback_data' => 'settemp_1.2']]]];
-    sendMessage($chat_id, "لطفا میزان خلاقیت و پویایی صدا را انتخاب کنید:", json_encode($tempKeyboard));
+    $explanation_text = "🌡️ **خلاقیت و پویایی صدا**\n\n";
+    $explanation_text .= "این پارامتر، میزان \"غیرقابل پیش‌بینی بودن\" و تنوع در صدای خروجی را کنترل می‌کند.\n\n";
+    $explanation_text .= "🔹 **مقادیر بالاتر (نزدیک به ۱.۵):**\nصدایی بسیار متنوع، احساسی و پویا ایجاد می‌کند. ایده‌آل برای محتوای خلاقانه و هنری.\n\n";
+    $explanation_text .= "🔸 **مقادیر پایین‌تر (نزدیک به ۰.۱):**\nصدایی پایدار، یکنواخت و قابل پیش‌بینی‌تر تولید می‌کند. مناسب برای خوانش متون رسمی و خبری.\n\n";
+    $explanation_text .= "*در واقع اینجا مشخص میشه که هوش مصنوعی چقدر خلاقیت نشون بده در تبدیل متن به صدا.*";
+    
+    sendMessage($chat_id, $explanation_text);
+
+    $tempKeyboard = ['inline_keyboard' => [
+        [['text' => 'کم (پایدار)', 'callback_data' => 'settemp_0.3'], ['text' => 'متوسط', 'callback_data' => 'settemp_0.7']],
+        [['text' => 'پیش‌فرض (بهینه)', 'callback_data' => 'settemp_0.9'], ['text' => 'زیاد (احساسی)', 'callback_data' => 'settemp_1.2']]
+    ]];
+    
+    sendMessage($chat_id, "حالا لطفا سطح خلاقیت مورد نظر خود را انتخاب کنید:", json_encode($tempKeyboard));
 }
+
 function sendMessage($chat_id, $message, $reply_markup = null) {
     $params = ['chat_id' => $chat_id, 'text' => $message, 'parse_mode' => 'Markdown'];
     if ($reply_markup) { $params['reply_markup'] = $reply_markup; }
