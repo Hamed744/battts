@@ -1,8 +1,7 @@
 <?php
 // ===================================================================
 // ALPHA TTS BOT - RENDER.COM - FINAL WITH LOCKING SYSTEM
-// This version prevents duplicate processing of long requests from Telegram.
-// Version: 4.2 - UI/UX Improvements for Keyboard and Referral Banner
+// Version: 4.3 - Made referral link a clickable hyperlink
 // ===================================================================
 
 define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
@@ -34,9 +33,6 @@ $speakers = [
 ];
 $speaker_count = count($speakers);
 
-// ===============================================
-// START OF MODIFIED SECTION 1: MAIN KEYBOARD
-// ===============================================
 $mainMenu = [
     'keyboard' => [
         [['text' => 'تبدیل متن به صدا 🎙️']],
@@ -46,10 +42,6 @@ $mainMenu = [
     ],
     'resize_keyboard' => true
 ];
-// ===============================================
-// END OF MODIFIED SECTION 1
-// ===============================================
-
 
 if ($_SERVER['REQUEST_METHOD'] === 'HEAD') { http_response_code(200); exit(); }
 if (isset($_GET['Authority']) && isset($_GET['Status'])) { handleZarinpalCallback(); exit(); }
@@ -115,7 +107,6 @@ function handleMessage($message) {
         return;
     }
     switch($text) {
-        // Updated case for the new button text
         case 'تبدیل متن به صدا 🎙️': case '/speakers': startSpeakerSelection($chat_id); return;
         case '🌡️ تنظیم خلاقیت': showTemperatureMenu($chat_id); return;
         case '💳 خرید اشتراک': showSubscriptionMenu($chat_id); return;
@@ -388,7 +379,7 @@ function showHelp($chat_id) {
 }
 
 // ===============================================
-// START OF MODIFIED SECTION 2: REFERRAL BANNER
+// START OF MODIFIED SECTION
 // ===============================================
 function showReferralInfo($chat_id) {
     // لینک اختصاصی کاربر
@@ -400,7 +391,8 @@ function showReferralInfo($chat_id) {
     $caption = "💎 قویترین هوش مصنوعی تبدیل متن به صدای فارسی\n\n";
     $caption .= "🎤 متن دلخواهت رو وارد کن فایل صوتی با صدای شخصیت های مختلف زن و مرد تحویل بگیر\n\n";
     $caption .= "🗣 تبدیل متن با بیش از 25 گوینده و پشتیبانی از همه زبان ها\n\n";
-    $caption .= "🎁 ربات رو استارت کن و لذت ببر 👇\n\n`" . $referral_link . "`"; // Link is now inside the caption
+    // The link is now a plain URL, which Telegram will automatically make clickable.
+    $caption .= "🎁 ربات رو استارت کن و لذت ببر 👇\n\n" . $referral_link; 
 
     // ارسال بنر (تصویر + کپشن)
     sendPhoto($chat_id, $banner_image_url, $caption);
@@ -415,6 +407,8 @@ function sendPhoto($chat_id, $photo_url, $caption = null, $reply_markup = null) 
     $params = ['chat_id' => $chat_id, 'photo' => $photo_url];
     if ($caption) {
         $params['caption'] = $caption;
+        // Parse mode is kept to allow potential future markdown in caption, 
+        // and it doesn't interfere with auto-linking URLs.
         $params['parse_mode'] = 'Markdown';
     }
     if ($reply_markup) {
@@ -423,9 +417,8 @@ function sendPhoto($chat_id, $photo_url, $caption = null, $reply_markup = null) 
     telegramApiRequest('sendPhoto', $params);
 }
 // ===============================================
-// END OF MODIFIED SECTION 2
+// END OF MODIFIED SECTION
 // ===============================================
-
 
 function showTemperatureMenu($chat_id) {
     $tempKeyboard = ['inline_keyboard' => [[['text' => 'کم (پایدار)', 'callback_data' => 'settemp_0.3'], ['text' => 'متوسط', 'callback_data' => 'settemp_0.7']], [['text' => 'پیش‌فرض (بهینه)', 'callback_data' => 'settemp_0.9'], ['text' => 'زیاد (احساسی)', 'callback_data' => 'settemp_1.2']]]];
