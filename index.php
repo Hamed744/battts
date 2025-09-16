@@ -1,7 +1,7 @@
 <?php
 // ===================================================================
 // ALPHA TTS & STT BOT - RENDER.COM
-// Version: 5.2 - Added credit system check for Speech-to-Text
+// Version: 5.3 - Updated main keyboard layout for better UX
 // ===================================================================
 
 define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
@@ -31,19 +31,22 @@ define('SPEAKER_PAGES', [
     'https://uploadkon.ir/uploads/9df915_25IMG-۲۰۲۵۰۹۱۵-۱۱۰۸۰۶.jpg'
 ]);
 $speakers = [
-    ["id" => "Charon", "name" => "شهاب (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQNox-KKZX3zq9MDLncxvJ1iJ6TgpwACnBkAAkNIQFba6SyfZFfZzDYE"], ["id" => "Zephyr", "name" => "آوا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPQFox-J7LoSkDhyIi-QB1R5Lo8mGYwACYxgAAsfpOVZj5bqFIcXJ6zYE"], ["id" => "Achird", "name" => "نوید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQ1ox-MfiSopQvDlUs0EhQpi62XHrAAC9B8AAha-QVaIWTf4YBiqmTYE"], ["id" => "Zubenelgenubi", "name" => "آرمان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRFox-NBcq6VkcXvuA_4Igj1PEkgYQACKigAAi9PQVZ4veRoeyfbhDYE"], ["id" => "Vindemiatrix", "name" => "مهسا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPRVox-NS3XGVPe9wdW1uoJQaJ11BkQAC0hYAAgNIQVagnFIpYX_8dDYE"], ["id" => "Sadachbia", "name" => "سامان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRdox-NgYIsVn83WVl0ZC08CBEmcegACyxgAAgN9QVZhh8TDp0TCVjYE"], ["id" => "Sadaltager", "name" => "آرش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRtox-N4UzJLw6QcQ5DRRUEgU7qgvAACNRkAArrjQVZxH2DWg2K2HzYE"], ["id" => "Sulafat", "name" => "شبنم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPR1ox-OKzExg_EimiDnOCLoGDoHRpAACfxcAAlVjQVaAXiad1E70NzYE"], ["id" => "Laomedeia", "name" => "سحر (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSFox-OWBAe4mAuVX5PDfR86EVO_qQACGxoAAj26OFYiFItngQOiwDYE"], ["id" => "Achernar", "name" => "مریم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSNox-OjinI-hCvP4f-aPnG3A27rDgACUxsAArlOQVbstmCZxsINJDYE"], ["id" => "Alnilam", "name" => "بهرام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSVox-OyDI-91uo0a90SKP_gl9LLLQACTBgAArpHQVY1oMYrjKmv9zYE"], ["id" => "Schedar", "name" => "نیکان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSlox-PESJhB9qJjuYXmYgnbjojuwQACcRgAAgH4OFaBbAhRQcNxyjYE"], ["id" => "Gacrux", "name" => "فرناز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPStox-QO_vjSqb21cz7GPa5RnXMbuAACTBkAAkLQQFb4kttkGAvC2jYE"], ["id" => "Pulcherrima", "name" => "سارا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPS1ox-Qeqn6ibT148SCuccPonqh4ZQAC4R8AArzfOFazYzXm0gHxVTYE"], ["id" => "Umbriel", "name" => "مانی (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPS9ox-QuUcUAAeKyD7A1lT-HUhSsAAEiAAKSGQACKMxBViNIL1SGu68UNgQ"], ["id" => "Algieba", "name" => "آرتین (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPTFox-RETf15qxnaOdOlNB79SA_BRAACRR8AAtxHQFbx6c8T6RbULzYE"], ["id" => "Despina", "name" => "دلنواز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPTpox-RVvVtm4OLHqj4iJFStCFXKKQACshkAAkaUQFarMRijcz788TYE"], ["id" => "Erinome", "name" => "روژان (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPT1ox-RmsM-QWebCkWquyRVpnRhDSgADHgACmC1AVjCg0Mzaz88nNgQ"], ["id" => "Algenib", "name" => "امید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPT9ox-R5Eoc0kogVwdZ01oD81v1SPgACCRgAAh7vQVbMnlqtIazx1DYE"], ["id" => "Orus", "name" => "بردیا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUFox-SIPYzgBqWHmLcNZW5NX_uwoAACtBkAAvr2QVa0LxB9WplycjYE"], ["id" => "Aoede", "name" => "ترانه (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUNox-SZFgcFIWq9RNnTsmkvfcr6GwACWRYAAjKHQFYcaJS1detsbioTYE"], ["id" => "Callirrhoe", "name" => "نیکو (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUVox-SnEZHeH2-oyxpzu1l1ze9pgAACuxgAAolrQFbnNgOtUfj5ezYE"], ["id" => "Autonoe", "name" => "هستی (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUdox-S3o8JaBig8xJDhMvwziZBWGAACOBoAAmb6QFZJ3G1QTkEm0TYE"], ["id" => "Enceladus", "name" => "کامیار (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUlox-THc7SxHNmBmlk-5yTa0KbjigACHhgAAmu0QFYa_SJCMtPREjYE"], ["id" => "Iapetus", "name" => "کیانوش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUtox-TZTWQTyMxoR3Z8bSEZEfJqPQAC_RsAAiGfQVadbFGzD8OUSDYE"], ["id" => "Puck", "name" => "پویا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPU1ox-Tn17qfYDuN9_VzcaWxHMxhFwACIRgAAno_QFZ5ZPKwGVwlWzYE"], ["id" => "Kore", "name" => "مهتاب (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPU9ox-UhdAH61qvl4urbSsE5w56TtAACfBgAApy0QFYZ0Az3CdbMZzYE"], ["id" => "Fenrir", "name" => "سام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPVFox-UtHi1p9mAMzteL26LhKAaBBgACVB0AArXbQFbW8BK3mtfIezYE"], ["id" => "Leda", "name" => "لیدا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPVNox-U-8jIxsxjNdcBNURwMFq9--wACtBkAAqelOVaJlegbhzaYWjYE"]
+    ["id" => "Charon", "name" => "شهاب (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQNox-KKZX3zq9MDLncxvJ1iJ6TgpwACnBkAAkNIQFba6SyfZFfZzDYE"], ["id" => "Zephyr", "name" => "آوا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPQFox-J7LoSkDhyIi-QB1R5Lo8mGYwACYxgAAsfpOVZj5bqFIcXJ6zYE"], ["id" => "Achird", "name" => "نوید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQ1ox-MfiSopQvDlUs0EhQpi62XHrAAC9B8AAha-QVaIWTf4YBiqmTYE"], ["id" => "Zubenelgenubi", "name" => "آرمان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRFox-NBcq6VkcXvuA_4Igj1PEkgYQACKigAAi9PQVZ4veRoeyfbhDYE"], ["id" => "Vindemiatrix", "name" => "مهسا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPRVox-NS3XGVPe9wdW1uoJQaJ11BkQAC0hYAAgNIQVagnFIpYX_8dDYE"], ["id" => "Sadachbia", "name" => "سامان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRdox-NgYIsVn83WVl0ZC08CBEmcegACyxgAAgN9QVZhh8TDp0TCVjYE"], ["id" => "Sadaltager", "name" => "آرش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRtox-N4UzJLw6QcQ5DRRUEgU7qgvAACNRkAArrjQVZxH2DWg2K2HzYE"], ["id" => "Sulafat", "name" => "شبنم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPR1ox-OKzExg_EimiDnOCLoGDoHRpAACfxcAAlVjQVaAXiad1E70NzYE"], ["id" => "Laomedeia", "name" => "سحر (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSFox-OWBAe4mAuVX5PDfR86EVO_qQACGxoAAj26OFYiFItngQOiwDYE"], ["id" => "Achernar", "name" => "مریم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSNox-OjinI-hCvP4f-aPnG3A27rDgACUxsAArlOQVbstmCZxsINJDYE"], ["id" => "Alnilam", "name" => "بهرام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSVox-OyDI-91uo0a90SKP_gl9LLLQACTBgAArpHQVY1oMYrjKmv9zYE"], ["id" => "Schedar", "name" => "نیکان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSlox-PESJhB9qJjuYXmYgnbjojuwQACcRgAAgH4OFaBbAhRQcNxyjYE"], ["id" => "Gacrux", "name" => "فرناز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPStox-QO_vjSqb21cz7GPa5RnXMbuAACTBkAAkLQQFb4kttkGAvC2jYE"], ["id" => "Pulcherrima", "name" => "سارا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPS1ox-Qeqn6ibT148SCuccPonqh4ZQAC4R8AArzfOFazYzXm0gHxVTYE"], ["id" => "Umbriel", "name" => "مانی (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPS9ox-QuUcUAAeKyD7A1lT-HUhSsAAEiAAKSGQACKMxBViNIL1SGu68UNgQ"], ["id" => "Algieba", "name" => "آرتین (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPTFox-RETf15qxnaOdOlNB79SA_BRAACRR8AAtxHQFbx6c8T6RbULzYE"], ["id" => "Despina", "name" => "دلنواز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPTpox-RVvVtm4OLHqj4iJFStCFXKKQACshkAAkaUQFarMRijcz788TYE"], ["id" => "Erinome", "name" => "روژان (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPT1ox-RmsM-QWebCkWquyRVpnRhDSgADHgACmC1AVjCg0Mzaz88nNgQ"], ["id" => "Algenib", "name" => "امید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPT9ox-R5Eoc0kogVwdZ01oD81v1SPgACCRgAAh7vQVbMnlqtIazx1DYE"], ["id" => "Orus", "name" => "بردیا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUFox-SIPYzgBqWHmLcNZW5NX_uwoAACtBkAAvr2QVa0LxB9WplycjYE"], ["id" => "Aoede", "name" => "ترانه (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUNox-SZFgcFIWq9RNnTsmkvfcr6GwACWRYAAjKHQFYcaJS152bioTYE"], ["id" => "Callirrhoe", "name" => "نیکو (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUVox-SnEZHeH2-oyxpzu1l1ze9pgAACuxgAAolrQFbnNgOtUfj5ezYE"], ["id" => "Autonoe", "name" => "هستی (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUdox-S3o8JaBig8xJDhMvwziZBWGAACOBoAAmb6QFZJ3G1QTkEm0TYE"], ["id" => "Enceladus", "name" => "کامیار (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUlox-THc7SxHNmBmlk-5yTa0KbjigACHhgAAmu0QFYa_SJCMtPREjYE"], ["id" => "Iapetus", "name" => "کیانوش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUtox-TZTWQTyMxoR3Z8bSEZEfJqPQAC_RsAAiGfQVadbFGzD8OUSDYE"], ["id" => "Puck", "name" => "پویا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPU1ox-Tn17qfYDuN9_VzcaWxHMxhFwACIRgAAno_QFZ5ZPKwGVwlWzYE"], ["id" => "Kore", "name" => "مهتاب (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPU9ox-UhdAH61qvl4urbSsE5w56TtAACfBgAApy0QFYZ0Az3CdbMZzYE"], ["id" => "Fenrir", "name" => "سام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPVFox-UtHi1p9mAMzteL26LhKAaBBgACVB0AArXbQFbW8BK3mtfIezYE"], ["id" => "Leda", "name" => "لیدا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPVNox-U-8jIxsxjNdcBNURwMFq9--wACtBkAAqelOVaJlegbhzaYWjYE"]
 ];
 $speaker_count = count($speakers);
 
+// === UPDATED MAIN KEYBOARD LAYOUT ===
 $mainMenu = [
     'keyboard' => [
-        [['text' => 'تبدیل متن به صدا 🎙️'], ['text' => 'تبدیل صوت به متن 🎧']],
+        [['text' => 'تبدیل متن به صدا 🎙️']],
+        [['text' => 'تبدیل صوت به متن 🧾']],
         [['text' => '🌡️ تنظیم خلاقیت'], ['text' => '💳 خرید اشتراک']],
         [['text' => '👥 دعوت از دوستان'], ['text' => '👤 حساب من']],
         [['text' => '📞 پشتیبانی'], ['text' => 'راهنما ℹ️']]
     ],
     'resize_keyboard' => true
 ];
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'HEAD') { http_response_code(200); exit(); }
 if (isset($_GET['Authority']) && isset($_GET['Status'])) { handleZarinpalCallback(); exit(); }
@@ -130,11 +133,14 @@ function handleMessage($message) {
     }
     switch($text) {
         case 'تبدیل متن به صدا 🎙️': case '/speakers': startSpeakerSelection($chat_id); return;
-        case 'تبدیل صوت به متن 🎧':
+        
+        // === UPDATED CASE WITH NEW EMOJI ===
+        case 'تبدیل صوت به متن 🧾':
             $user_data['state'] = 'awaiting_audio';
             saveUserData($chat_id, $user_data);
             sendMessage($chat_id, "لطفا فایل صوتی یا پیام صوتی (voice) خود را برای تبدیل به متن ارسال کنید.");
             return;
+
         case '🌡️ تنظیم خلاقیت': showTemperatureMenu($chat_id); return;
         case '💳 خرید اشتراک': showSubscriptionMenu($chat_id); return;
         case '👥 دعوت از دوستان': showReferralInfo($chat_id); return;
@@ -225,13 +231,10 @@ function handleMessage($message) {
 }
 
 function handleAudioTranscription($chat_id, $file_id) {
-    // === THIS IS THE KEY SECURITY FIX ===
-    // 1. Check if user has credits BEFORE any processing.
     if (!canUserConvert($chat_id)) {
         sendMessage($chat_id, "❌ اعتبار رایگان شما برای انجام این عملیات به پایان رسیده است.\n\nبرای استفاده نامحدود، لطفا از دکمه '💳 خرید اشتراک' یک پلن تهیه کنید.");
         return;
     }
-    // ===================================
 
     $wait_message_json = telegramApiRequest('sendMessage', ['chat_id' => $chat_id, 'text' => "⏳ فایل صوتی دریافت شد. لطفاً برای شروع پردازش صبر کنید..."]);
     $wait_message_id = json_decode($wait_message_json, true)['result']['message_id'];
@@ -316,7 +319,7 @@ function handleAudioTranscription($chat_id, $file_id) {
     editMessageText($chat_id, $wait_message_id, "❌ زمان پردازش فایل صوتی شما بیش از حد طولانی شد. لطفاً فایل کوتاه‌تری را امتحان کنید.");
 }
 
-// ... Rest of the functions remain unchanged ...
+// ... The rest of the functions (release_lock, handleCallbackQuery, etc.) remain unchanged ...
 
 function release_lock($chat_id) {
     $user_data = loadUserData($chat_id);
