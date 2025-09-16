@@ -1,7 +1,7 @@
 <?php
 // ===================================================================
 // ALPHA TTS & STT BOT - RENDER.COM
-// Version: 5.0 - Added Speech-to-Text functionality via Python API
+// Version: 5.1 - Fixed MIME type issue for Speech-to-Text API
 // ===================================================================
 
 define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
@@ -14,7 +14,6 @@ define('USER_API_URL', getenv('USER_API_URL'));
 define('USER_API_SECRET', getenv('USER_API_SECRET'));
 define('CALLBACK_URL', 'https://' . ($_SERVER['HTTP_HOST'] ?? 'YOUR_APP_NAME.onrender.com') . '/');
 
-// === NEW CONSTANT FOR SPEECH-TO-TEXT API ===
 define('SPEECH_TO_TEXT_API_URL', 'https://ezmary-sadabematn.hf.space');
 
 ignore_user_abort(true);
@@ -36,7 +35,6 @@ $speakers = [
 ];
 $speaker_count = count($speakers);
 
-// === UPDATED MAIN KEYBOARD ===
 $mainMenu = [
     'keyboard' => [
         [['text' => 'تبدیل متن به صدا 🎙️'], ['text' => 'تبدیل صوت به متن 🎧']],
@@ -77,7 +75,6 @@ function handleMessage($message) {
     
     $user_state = $user_data['state'] ?? 'normal';
 
-    // === NEW: HANDLE AUDIO/VOICE MESSAGES ===
     if (isset($message['voice']) || isset($message['audio'])) {
         if ($user_state === 'awaiting_audio') {
             $user_data['processing_lock'] = time();
@@ -87,12 +84,11 @@ function handleMessage($message) {
             $file_id = isset($message['voice']) ? $message['voice']['file_id'] : $message['audio']['file_id'];
             handleAudioTranscription($chat_id, $file_id);
             
-            // Unset state after processing
-            $user_data = loadUserData($chat_id); // Reload data
+            $user_data = loadUserData($chat_id);
             unset($user_data['state']);
             saveUserData($chat_id, $user_data);
         }
-        return; // Stop further processing for audio messages
+        return;
     }
     
     $user_data['processing_lock'] = time();
@@ -121,7 +117,7 @@ function handleMessage($message) {
         if (count($parts) > 1 && strpos($parts[1], 'ref_') === 0) {
             $inviter_id = substr($parts[1], 4);
             $new_user_data = loadUserData($chat_id);
-            if (count($new_user_data) <= 2 && $inviter_id != $chat_id) { // <=2 because lock is set
+            if (count($new_user_data) <= 2 && $inviter_id != $chat_id) {
                 $inviter_data = loadUserData($inviter_id);
                 $inviter_credits = $inviter_data['free_credits_remaining'] ?? 10;
                 $inviter_data['free_credits_remaining'] = $inviter_credits + 8;
@@ -134,14 +130,11 @@ function handleMessage($message) {
     }
     switch($text) {
         case 'تبدیل متن به صدا 🎙️': case '/speakers': startSpeakerSelection($chat_id); return;
-        
-        // === NEW CASE FOR SPEECH-TO-TEXT BUTTON ===
         case 'تبدیل صوت به متن 🎧':
             $user_data['state'] = 'awaiting_audio';
             saveUserData($chat_id, $user_data);
             sendMessage($chat_id, "لطفا فایل صوتی یا پیام صوتی (voice) خود را برای تبدیل به متن ارسال کنید.");
             return;
-
         case '🌡️ تنظیم خلاقیت': showTemperatureMenu($chat_id); return;
         case '💳 خرید اشتراک': showSubscriptionMenu($chat_id); return;
         case '👥 دعوت از دوستان': showReferralInfo($chat_id); return;
@@ -231,13 +224,11 @@ function handleMessage($message) {
     }
 }
 
-// === NEW FUNCTION TO HANDLE AUDIO TRANSCRIPTION ===
+// === UPDATED FUNCTION TO HANDLE AUDIO TRANSCRIPTION ===
 function handleAudioTranscription($chat_id, $file_id) {
-    // 1. Send a waiting message
     $wait_message_json = telegramApiRequest('sendMessage', ['chat_id' => $chat_id, 'text' => "⏳ فایل صوتی دریافت شد. لطفاً برای شروع پردازش صبر کنید..."]);
     $wait_message_id = json_decode($wait_message_json, true)['result']['message_id'];
 
-    // 2. Get file path from Telegram
     $file_info_json = telegramApiRequest('getFile', ['file_id' => $file_id]);
     $file_info = json_decode($file_info_json, true);
     if (!$file_info['ok']) {
@@ -247,20 +238,29 @@ function handleAudioTranscription($chat_id, $file_id) {
     $file_path = $file_info['result']['file_path'];
     $file_url = 'https://api.telegram.org/file/bot' . TELEGRAM_BOT_TOKEN . '/' . $file_path;
     
-    // 3. Download the audio file
     $audio_data = @file_get_contents($file_url);
     if ($audio_data === false) {
         editMessageText($chat_id, $wait_message_id, "❌ خطا در دانلود فایل صوتی از سرور تلگرام.");
         return;
     }
     
-    // 4. Save to a temporary file
     $temp_file_path = tempnam(sys_get_temp_dir(), 'stt_') . '.' . pathinfo($file_path, PATHINFO_EXTENSION);
     file_put_contents($temp_file_path, $audio_data);
 
-    // 5. Send to Python API
     editMessageText($chat_id, $wait_message_id, "⏳ در حال ارسال فایل به هوش مصنوعی آلفا...");
-    $curl_file = new CURLFile($temp_file_path);
+    
+    // === THIS IS THE KEY FIX ===
+    // 1. Detect the MIME type from the actual file content.
+    $mime_type = mime_content_type($temp_file_path);
+    if ($mime_type === false) {
+        // Fallback in case detection fails
+        $mime_type = 'application/octet-stream';
+    }
+    
+    // 2. Create a CURLFile object with the detected MIME type.
+    $curl_file = new CURLFile($temp_file_path, $mime_type, basename($temp_file_path));
+    // ============================
+    
     $post_data = ['audio_file' => $curl_file];
     
     $ch = curl_init(SPEECH_TO_TEXT_API_URL . '/api/transcribe');
@@ -282,12 +282,12 @@ function handleAudioTranscription($chat_id, $file_id) {
     $task_id = $response['task_id'] ?? null;
 
     if (!$task_id) {
-        editMessageText($chat_id, $wait_message_id, "❌ خطای ناشناخته در شروع پردازش صوت.");
+        $error_details = $response['error'] ?? 'خطای ناشناخته در شروع پردازش صوت.';
+        editMessageText($chat_id, $wait_message_id, "❌ " . $error_details);
         return;
     }
 
-    // 6. Poll for the result
-    $max_attempts = 30; // 30 attempts * 5 seconds = 150 seconds timeout
+    $max_attempts = 30;
     for ($i = 0; $i < $max_attempts; $i++) {
         editMessageText($chat_id, $wait_message_id, "⏳ هوش مصنوعی در حال تبدیل صوت به متن است... (تلاش " . ($i + 1) . "/{$max_attempts})");
         sleep(5);
@@ -315,6 +315,8 @@ function handleAudioTranscription($chat_id, $file_id) {
     editMessageText($chat_id, $wait_message_id, "❌ زمان پردازش فایل صوتی شما بیش از حد طولانی شد. لطفاً فایل کوتاه‌تری را امتحان کنید.");
 }
 
+// ... The rest of the functions (release_lock, handleCallbackQuery, etc.) remain unchanged ...
+// ... Copy the rest of your original file from here onwards ...
 
 function release_lock($chat_id) {
     $user_data = loadUserData($chat_id);
