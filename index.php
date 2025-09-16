@@ -2,7 +2,7 @@
 // ===================================================================
 // ALPHA TTS BOT - RENDER.COM - FINAL WITH LOCKING SYSTEM
 // This version prevents duplicate processing of long requests from Telegram.
-// Version: 4.1 - Added Photo Banner for Referrals
+// Version: 4.2 - UI/UX Improvements for Keyboard and Referral Banner
 // ===================================================================
 
 define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
@@ -33,7 +33,23 @@ $speakers = [
     ["id" => "Charon", "name" => "شهاب (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQNox-KKZX3zq9MDLncxvJ1iJ6TgpwACnBkAAkNIQFba6SyfZFfZzDYE"], ["id" => "Zephyr", "name" => "آوا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPQFox-J7LoSkDhyIi-QB1R5Lo8mGYwACYxgAAsfpOVZj5bqFIcXJ6zYE"], ["id" => "Achird", "name" => "نوید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPQ1ox-MfiSopQvDlUs0EhQpi62XHrAAC9B8AAha-QVaIWTf4YBiqmTYE"], ["id" => "Zubenelgenubi", "name" => "آرمان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRFox-NBcq6VkcXvuA_4Igj1PEkgYQACKigAAi9PQVZ4veRoeyfbhDYE"], ["id" => "Vindemiatrix", "name" => "مهسا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPRVox-NS3XGVPe9wdW1uoJQaJ11BkQAC0hYAAgNIQVagnFIpYX_8dDYE"], ["id" => "Sadachbia", "name" => "سامان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRdox-NgYIsVn83WVl0ZC08CBEmcegACyxgAAgN9QVZhh8TDp0TCVjYE"], ["id" => "Sadaltager", "name" => "آرش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPRtox-N4UzJLw6QcQ5DRRUEgU7qgvAACNRkAArrjQVZxH2DWg2K2HzYE"], ["id" => "Sulafat", "name" => "شبنم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPR1ox-OKzExg_EimiDnOCLoGDoHRpAACfxcAAlVjQVaAXiad1E70NzYE"], ["id" => "Laomedeia", "name" => "سحر (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSFox-OWBAe4mAuVX5PDfR86EVO_qQACGxoAAj26OFYiFItngQOiwDYE"], ["id" => "Achernar", "name" => "مریم (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPSNox-OjinI-hCvP4f-aPnG3A27rDgACUxsAArlOQVbstmCZxsINJDYE"], ["id" => "Alnilam", "name" => "بهرام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSVox-OyDI-91uo0a90SKP_gl9LLLQACTBgAArpHQVY1oMYrjKmv9zYE"], ["id" => "Schedar", "name" => "نیکان (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPSlox-PESJhB9qJjuYXmYgnbjojuwQACcRgAAgH4OFaBbAhRQcNxyjYE"], ["id" => "Gacrux", "name" => "فرناز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPStox-QO_vjSqb21cz7GPa5RnXMbuAACTBkAAkLQQFb4kttkGAvC2jYE"], ["id" => "Pulcherrima", "name" => "سارا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPS1ox-Qeqn6ibT148SCuccPonqh4ZQAC4R8AArzfOFazYzXm0gHxVTYE"], ["id" => "Umbriel", "name" => "مانی (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPS9ox-QuUcUAAeKyD7A1lT-HUhSsAAEiAAKSGQACKMxBViNIL1SGu68UNgQ"], ["id" => "Algieba", "name" => "آرتین (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPTFox-RETf15qxnaOdOlNB79SA_BRAACRR8AAtxHQFbx6c8T6RbULzYE"], ["id" => "Despina", "name" => "دلنواز (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPTpox-RVvVtm4OLHqj4iJFStCFXKKQACshkAAkaUQFarMRijcz788TYE"], ["id" => "Erinome", "name" => "روژان (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPT1ox-RmsM-QWebCkWquyRVpnRhDSgADHgACmC1AVjCg0Mzaz88nNgQ"], ["id" => "Algenib", "name" => "امید (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPT9ox-R5Eoc0kogVwdZ01oD81v1SPgACCRgAAh7vQVbMnlqtIazx1DYE"], ["id" => "Orus", "name" => "بردیا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUFox-SIPYzgBqWHmLcNZW5NX_uwoAACtBkAAvr2QVa0LxB9WplycjYE"], ["id" => "Aoede", "name" => "ترانه (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUNox-SZFgcFIWq9RNnTsmkvfcr6GwACWRYAAjKHQFYcaJS152bioTYE"], ["id" => "Callirrhoe", "name" => "نیکو (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUVox-SnEZHeH2-oyxpzu1l1ze9pgAACuxgAAolrQFbnNgOtUfj5ezYE"], ["id" => "Autonoe", "name" => "هستی (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPUdox-S3o8JaBig8xJDhMvwziZBWGAACOBoAAmb6QFZJ3G1QTkEm0TYE"], ["id" => "Enceladus", "name" => "کامیار (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUlox-THc7SxHNmBmlk-5yTa0KbjigACHhgAAmu0QFYa_SJCMtPREjYE"], ["id" => "Iapetus", "name" => "کیانوش (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPUtox-TZTWQTyMxoR3Z8bSEZEfJqPQAC_RsAAiGfQVadbFGzD8OUSDYE"], ["id" => "Puck", "name" => "پویا (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPU1ox-Tn17qfYDuN9_VzcaWxHMxhFwACIRgAAno_QFZ5ZPKwGVwlWzYE"], ["id" => "Kore", "name" => "مهتاب (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPU9ox-UhdAH61qvl4urbSsE5w56TtAACfBgAApy0QFYZ0Az3CdbMZzYE"], ["id" => "Fenrir", "name" => "سام (مرد)", "sticker_id" => "CAACAgUAAxkBAAEYPVFox-UtHi1p9mAMzteL26LhKAaBBgACVB0AArXbQFbW8BK3mtfIezYE"], ["id" => "Leda", "name" => "لیدا (زن)", "sticker_id" => "CAACAgUAAxkBAAEYPVNox-U-8jIxsxjNdcBNURwMFq9--wACtBkAAqelOVaJlegbhzaYWjYE"]
 ];
 $speaker_count = count($speakers);
-$mainMenu = ['keyboard' => [[['text' => '🎤 تغییر گوینده'], ['text' => '🌡️ تنظیم خلاقیت']], [['text' => '💳 خرید اشتراک'], ['text' => '👥 دعوت از دوستان']], [['text' => '👤 حساب من'], ['text' => '📞 پشتیبانی'], ['text' => 'راهنما ℹ️']]], 'resize_keyboard' => true];
+
+// ===============================================
+// START OF MODIFIED SECTION 1: MAIN KEYBOARD
+// ===============================================
+$mainMenu = [
+    'keyboard' => [
+        [['text' => 'تبدیل متن به صدا 🎙️']],
+        [['text' => '🌡️ تنظیم خلاقیت'], ['text' => '💳 خرید اشتراک']],
+        [['text' => '👥 دعوت از دوستان'], ['text' => '👤 حساب من']],
+        [['text' => '📞 پشتیبانی'], ['text' => 'راهنما ℹ️']]
+    ],
+    'resize_keyboard' => true
+];
+// ===============================================
+// END OF MODIFIED SECTION 1
+// ===============================================
+
 
 if ($_SERVER['REQUEST_METHOD'] === 'HEAD') { http_response_code(200); exit(); }
 if (isset($_GET['Authority']) && isset($_GET['Status'])) { handleZarinpalCallback(); exit(); }
@@ -99,7 +115,8 @@ function handleMessage($message) {
         return;
     }
     switch($text) {
-        case '🎤 تغییر گوینده': case '/speakers': startSpeakerSelection($chat_id); return;
+        // Updated case for the new button text
+        case 'تبدیل متن به صدا 🎙️': case '/speakers': startSpeakerSelection($chat_id); return;
         case '🌡️ تنظیم خلاقیت': showTemperatureMenu($chat_id); return;
         case '💳 خرید اشتراک': showSubscriptionMenu($chat_id); return;
         case '👥 دعوت از دوستان': showReferralInfo($chat_id); return;
@@ -364,14 +381,14 @@ function showHelp($chat_id) {
     $help_text = "راهنمای استفاده از ربات آلفا:\n\n";
     $help_text .= "1️⃣ **تبدیل ساده متن:**\nکافیست متن خود را ارسال کنید.\n\n";
     $help_text .= "2️⃣ **افزودن لحن و احساس:**\nتوصیف لحن را در انتهای متن خود و داخل پرانتز `()` قرار دهید.\n*مثال:* `سلام (با لحنی خوشحال)`\n\n";
-    $help_text .= "3️⃣ **تغییر گوینده:**\nاز منو، گزینه '🎤 تغییر گوینده' را انتخاب کنید.\n\n";
+    $help_text .= "3️⃣ **تغییر گوینده:**\nاز منو، گزینه 'تبدیل متن به صدا 🎙️' را انتخاب کنید.\n\n";
     $help_text .= "4️⃣ **تنظیم خلاقیت:**\nاز منو، گزینه '🌡️ تنظیم خلاقیت' را انتخاب کنید.\n\n";
     $help_text .= "5️⃣ **دعوت از دوستان:**\nاز منو، گزینه '👥 دعوت از دوستان' را انتخاب کرده و با لینک اختصاصی خود، برای هر عضویت جدید ۸ اعتبار رایگان هدیه بگیرید.";
     sendMessage($chat_id, $help_text);
 }
 
 // ===============================================
-// START OF MODIFIED SECTION
+// START OF MODIFIED SECTION 2: REFERRAL BANNER
 // ===============================================
 function showReferralInfo($chat_id) {
     // لینک اختصاصی کاربر
@@ -383,25 +400,19 @@ function showReferralInfo($chat_id) {
     $caption = "💎 قویترین هوش مصنوعی تبدیل متن به صدای فارسی\n\n";
     $caption .= "🎤 متن دلخواهت رو وارد کن فایل صوتی با صدای شخصیت های مختلف زن و مرد تحویل بگیر\n\n";
     $caption .= "🗣 تبدیل متن با بیش از 25 گوینده و پشتیبانی از همه زبان ها\n\n";
-    $caption .= "🎁 ربات رو استارت کن و لذت ببر 👇";
+    $caption .= "🎁 ربات رو استارت کن و لذت ببر 👇\n\n`" . $referral_link . "`"; // Link is now inside the caption
 
-    // ساخت دکمه شیشه‌ای (Inline Keyboard) با لینک دعوت
-    $keyboard = ['inline_keyboard' => [
-        [['text' => '🚀 ورود به ربات و دریافت هدیه', 'url' => $referral_link]]
-    ]];
-
-    // ارسال بنر (تصویر + کپشن + دکمه)
-    sendPhoto($chat_id, $banner_image_url, $caption, json_encode($keyboard));
+    // ارسال بنر (تصویر + کپشن)
+    sendPhoto($chat_id, $banner_image_url, $caption);
 
     // ارسال پیام متنی جداگانه بعد از بنر
     $follow_up_message = "برای دریافت 💳 اعتبار رایگان بنر بالا را به اشتراک بگزارید. برای هر نفر که با لینک شما وارد ربات شود 8 تبدیل رایگان هدیه 🎁 دریافت میکنید.";
     sendMessage($chat_id, $follow_up_message);
 }
 
-// تابع جدید برای ارسال عکس
+// تابع کمکی برای ارسال عکس
 function sendPhoto($chat_id, $photo_url, $caption = null, $reply_markup = null) {
     $params = ['chat_id' => $chat_id, 'photo' => $photo_url];
-    // parse_mode را فقط در صورتی اضافه میکنیم که کپشن وجود داشته باشد تا از خطا جلوگیری شود
     if ($caption) {
         $params['caption'] = $caption;
         $params['parse_mode'] = 'Markdown';
@@ -412,7 +423,7 @@ function sendPhoto($chat_id, $photo_url, $caption = null, $reply_markup = null) 
     telegramApiRequest('sendPhoto', $params);
 }
 // ===============================================
-// END OF MODIFIED SECTION
+// END OF MODIFIED SECTION 2
 // ===============================================
 
 
