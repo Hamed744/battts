@@ -20,7 +20,7 @@ ignore_user_abort(true);
 set_time_limit(600); 
 
 define('SUBSCRIPTION_PLANS', [
-    '1_month' => ['name' => 'یک ماهه نامحدود', 'price' => 150000, 'duration' => '+1 month'],
+    '1_month' => ['name' => 'یک ماهه نامحدود', 'price' => 5000, 'duration' => '+1 month'],
     '6_months' => ['name' => 'شش ماهه نامحدود', 'price' => 497000, 'duration' => '+6 months'],
     '1_year' => ['name' => 'یک ساله نامحدود', 'price' => 799000, 'duration' => '+1 year']
 ]);
