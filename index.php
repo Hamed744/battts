@@ -1,7 +1,7 @@
 <?php
 // ===================================================================
 // ALPHA TTS & STT BOT - RENDER.COM
-// Version: 5.4 - Re-implemented banner and detailed creativity explanation
+// Version: 5.5 - Implemented Retry Logic for TTS Generation
 // ===================================================================
 
 define('TELEGRAM_BOT_TOKEN', getenv('TELEGRAM_BOT_TOKEN'));
@@ -183,32 +183,70 @@ function handleMessage($message) {
     $text_chunks = splitTextIntoChunks($clean_text);
     $audio_files = [];
     $has_error = false;
+
+    // === START: REVISED TTS GENERATION LOGIC WITH RETRY ===
     foreach ($text_chunks as $index => $chunk) {
         editMessageText($chat_id, $wait_message_id, "⏳ در حال پردازش بخش " . ($index + 1) . " از " . count($text_chunks) . " ...");
-        $current_user_data = loadUserData($chat_id);
-        $speaker_id = $current_user_data['speaker'] ?? 'Charon';
-        $temperature = $current_user_data['temperature'] ?? 0.9;
-        $requestData = [ 'text' => $chunk, 'prompt' => $prompt, 'speaker' => $speaker_id, 'temperature' => $temperature, 'subscriptionStatus' => 'paid', 'fingerprint' => 'php-telegram-bot-v1'];
-        $headers = ['Content-Type: application/json', 'x-internal-api-key: ' . INTERNAL_API_SECRET];
-        $ch = curl_init(RENDER_API_URL);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($requestData), CURLOPT_HTTPHEADER => $headers, CURLOPT_TIMEOUT => 120]);
-        $audio_data = curl_exec($ch);
-        $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-        if ($http_code == 200 && !empty($audio_data)) {
+        
+        $max_retries = 3;
+        $success = false;
+        $audio_data = null;
+
+        for ($attempt = 1; $attempt <= $max_retries; $attempt++) {
+            $current_user_data = loadUserData($chat_id);
+            $speaker_id = $current_user_data['speaker'] ?? 'Charon';
+            $temperature = $current_user_data['temperature'] ?? 0.9;
+            
+            $requestData = [
+                'text' => $chunk,
+                'prompt' => $prompt,
+                'speaker' => $speaker_id,
+                'temperature' => $temperature,
+                'subscriptionStatus' => 'paid',
+                'fingerprint' => 'php-telegram-bot-v1'
+            ];
+            
+            $headers = ['Content-Type: application/json', 'x-internal-api-key: ' . INTERNAL_API_SECRET];
+            $ch = curl_init(RENDER_API_URL);
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_POSTFIELDS => json_encode($requestData), CURLOPT_HTTPHEADER => $headers, CURLOPT_TIMEOUT => 120]);
+            $response_data = curl_exec($ch);
+            $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($http_code == 200 && !empty($response_data)) {
+                $audio_data = $response_data;
+                $success = true;
+                break; // Exit the retry loop on success
+            }
+            
+            // If not the last attempt, wait a bit before retrying
+            if ($attempt < $max_retries) {
+                sleep(2); // Wait for 2 seconds
+            }
+        }
+
+        if ($success) {
             $temp_file = tempnam(sys_get_temp_dir(), 'tts') . '.wav';
             file_put_contents($temp_file, $audio_data);
             $audio_files[] = $temp_file;
         } else {
             $has_error = true;
-            break;
+            // No break here, continue to the next chunk
         }
     }
+    // === END: REVISED TTS GENERATION LOGIC ===
+
     deleteMessage($chat_id, $wait_message_id);
-    if ($has_error || empty($audio_files)) {
-        sendMessage($chat_id, "متاسفانه مشکلی در تولید صدا پیش آمد.");
+
+    if (empty($audio_files)) {
+        sendMessage($chat_id, "متاسفانه مشکلی در تولید صدا پیش آمد. هیچ بخشی با موفقیت پردازش نشد.");
         return;
     }
+
+    if ($has_error) {
+        sendMessage($chat_id, "⚠️ توجه: ممکن است به دلیل خطا در پردازش، بخش‌هایی از صدا ناقص باشد.");
+    }
+
     $final_audio_path = mergeWavFiles($audio_files);
     if ($final_audio_path) {
         $current_user_data = loadUserData($chat_id);
